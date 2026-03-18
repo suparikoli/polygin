@@ -26,6 +26,11 @@ def normalize_phone(phone, default_country_code):
 	country_code = cstr(default_country_code).strip() or "+91"
 	if not country_code.startswith("+"):
 		country_code = f"+{country_code}"
+	country_digits = country_code[1:]
+
+	# If number already includes country code (without +), only prepend "+".
+	if country_digits and clean_number.startswith(country_digits):
+		return f"+{clean_number}"
 
 	normalized = f"{country_code}{clean_number}"
 	# Basic guard to avoid sending empty or non-numeric targets to API.
