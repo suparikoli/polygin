@@ -11,15 +11,14 @@ app_license = "mit"
 # required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "polygin",
-# 		"logo": "/assets/polygin/logo.png",
-# 		"title": "Polygin",
-# 		"route": "/polygin",
-# 		"has_permission": "polygin.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": "polygin",
+		"logo": "/assets/polygin/images/polygin_logo.webp",
+		"title": "Polygin",
+		"route": "/app/polygin",
+	}
+]
 
 # Includes in <head>
 # ------------------
@@ -43,7 +42,11 @@ app_license = "mit"
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+doctype_js = {
+	"Lead": "public/js/polygin.js",
+	"Contact": "public/js/polygin.js",
+	"Customer": "public/js/polygin.js",
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -249,4 +252,3 @@ app_license = "mit"
 # ------------
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
-

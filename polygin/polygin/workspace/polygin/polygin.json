@@ -1,0 +1,68 @@
+{
+ "charts": [],
+ "content": "[{\"id\":\"polygin_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Polygin</span>\",\"col\":12}},{\"id\":\"polygin_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Settings\",\"col\":3}},{\"id\":\"polygin_logs_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Message Log\",\"col\":3}}]",
+ "creation": "2026-03-18 00:00:00",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "notification",
+ "idx": 0,
+ "indicator_color": "",
+ "is_hidden": 0,
+ "label": "Polygin",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Polygin Settings",
+   "link_count": 0,
+   "link_to": "Polygin Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Polygin Message Log",
+   "link_count": 0,
+   "link_to": "Polygin Message Log",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-03-18 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Polygin",
+ "name": "Polygin",
+ "number_cards": [],
+ "owner": "Administrator",
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [],
+ "sequence_id": 1.0,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "Form",
+   "format": "{} Open",
+   "label": "Polygin Settings",
+   "link_to": "Polygin Settings",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": "{} List",
+   "label": "Polygin Message Log",
+   "link_to": "Polygin Message Log",
+   "type": "DocType"
+  }
+ ],
+ "title": "Polygin",
+ "app": "polygin"
+}
