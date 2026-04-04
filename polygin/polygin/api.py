@@ -288,7 +288,7 @@ def get_chat_messages(phone, channel="whatsapp", page=1, page_size=50):
 		filters={"normalized_phone": normalized},
 		fields=[
 			"name", "sender_name", "sender_mobile", "message", "message_type",
-			"media_file", "timestamp", "uid", "origin", "direction", "responding_agent", "creation",
+			"media_file", "timestamp", "uid", "origin", "direction", "responding_agent", "raw_data", "creation",
 		],
 		order_by="creation desc",
 		limit_page_length=page_size + 1,
@@ -309,6 +309,7 @@ def get_chat_messages(phone, channel="whatsapp", page=1, page_size=50):
 			"timestamp": str(parsed_ts) if parsed_ts else str(msg.creation),
 			"sender_name": msg.sender_name,
 			"responding_agent": msg.responding_agent,
+			"raw_data": msg.raw_data,
 			"source": "message",
 			"origin": msg.origin,
 		})
@@ -427,6 +428,13 @@ def send_chat_message(phone, message_type, content=None, media_url=None, caption
 
 	# Store outgoing message locally
 	display_message = content or caption or f"[{message_type}]"
+	# Map message_type for storage
+	stored_type = message_type
+	if message_type == "interactive_list":
+		stored_type = "interactive"
+	elif message_type == "interactive_button":
+		stored_type = "button"
+
 	try:
 		agent_name = frappe.utils.get_fullname(frappe.session.user)
 		doc = frappe.get_doc({
@@ -434,13 +442,14 @@ def send_chat_message(phone, message_type, content=None, media_url=None, caption
 			"sender_name": agent_name,
 			"sender_mobile": normalized_for_api,
 			"message": display_message,
-			"message_type": message_type if message_type not in ("interactive_list", "interactive_button") else "interactive",
+			"message_type": stored_type,
 			"media_file": media_url,
 			"timestamp": str(frappe.utils.now_datetime()),
 			"origin": "outgoing",
 			"direction": "outgoing",
 			"responding_agent": agent_name,
 			"normalized_phone": normalize_phone_for_matching(phone),
+			"raw_data": interactive_data if message_type in ("interactive_list", "interactive_button") else None,
 		})
 		doc.insert(ignore_permissions=True)
 	except Exception:
@@ -481,3 +490,14 @@ def get_chat_settings():
 		"enable_chat_widget": cint(settings.get("enable_chat_widget", 1)),
 		"default_country_code": cstr(settings.default_country_code).strip() or "+91",
 	}
+
+
+@frappe.whitelist()
+def get_quick_replies():
+	"""Return active quick reply templates."""
+	return frappe.get_all(
+		"Polygin Quick Reply",
+		filters={"is_active": 1},
+		fields=["name", "title", "message", "shortcode"],
+		order_by="title asc",
+	)
