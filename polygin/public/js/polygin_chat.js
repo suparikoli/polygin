@@ -80,12 +80,14 @@ class PolyginChat {
 		if (!this.$widget) return;
 		this.isFullscreen = true;
 		this.$widget.addClass("polygin-chat-fullscreen");
+		this.$widget.find(".polygin-tl-fullscreen").addClass("polygin-tl-minimize-state");
 	}
 
 	collapse_to_widget() {
 		if (!this.$widget) return;
 		this.isFullscreen = false;
 		this.$widget.removeClass("polygin-chat-fullscreen");
+		this.$widget.find(".polygin-tl-fullscreen").removeClass("polygin-tl-minimize-state");
 	}
 
 	collapse_to_bubble() {
@@ -110,8 +112,8 @@ class PolyginChat {
 					<div class="polygin-chat-header-phone">${frappe.utils.escape_html(this.phone)}</div>
 				</div>
 				<div class="polygin-chat-header-actions">
-					<span class="polygin-traffic-light polygin-tl-close" title="Close"></span>
 					<span class="polygin-traffic-light polygin-tl-fullscreen" title="Fullscreen"></span>
+					<span class="polygin-traffic-light polygin-tl-close" title="Close"></span>
 				</div>
 			</div>
 			<div class="polygin-chat-response-window" style="display:none;"></div>

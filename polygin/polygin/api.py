@@ -319,13 +319,14 @@ def get_chat_messages(phone, channel="whatsapp", page=1, page_size=50):
 		log_records = frappe.get_all(
 			"Polygin Message Log",
 			filters={"status": "Success"},
-			fields=["name", "recipient", "template", "response", "timestamp", "creation"],
+			fields=["name", "recipient", "template", "response", "timestamp", "creation", "owner"],
 			order_by="creation desc",
 			limit_page_length=50,
 		)
 		for log in log_records:
 			log_normalized = normalize_phone_for_matching(log.recipient)
 			if log_normalized == normalized:
+				agent = frappe.utils.get_fullname(log.owner) if log.owner else "You"
 				messages.append({
 					"id": log.name,
 					"direction": "outgoing",
@@ -333,7 +334,8 @@ def get_chat_messages(phone, channel="whatsapp", page=1, page_size=50):
 					"message_type": "template",
 					"media_url": None,
 					"timestamp": str(log.timestamp or log.creation),
-					"sender_name": "You",
+					"sender_name": agent,
+					"responding_agent": agent,
 					"source": "template_log",
 					"origin": "outgoing",
 				})
