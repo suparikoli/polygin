@@ -167,13 +167,6 @@
 .polygin-tl-close::after {
 	content: "\00D7";
 }
-.polygin-tl-minimize {
-	background: #febc2e;
-}
-.polygin-tl-minimize::after {
-	content: "\2013";
-	font-size: 10px;
-}
 .polygin-tl-fullscreen {
 	background: #28c840;
 }
@@ -830,4 +823,109 @@
 	.polygin-chat-header {
 		padding: 10px 12px;
 	}
+}
+
+/* ── Dark Mode ─────────────────────────────────────────────── */
+[data-theme="dark"] .polygin-chat-widget {
+	background: #1a1a2e;
+	border: 1px solid #2a2a3e;
+}
+[data-theme="dark"] .polygin-chat-header {
+	background: #0d2818;
+}
+[data-theme="dark"] .polygin-chat-messages {
+	background: #111827;
+}
+[data-theme="dark"] .polygin-chat-empty,
+[data-theme="dark"] .polygin-chat-loading {
+	color: #8696a0;
+}
+[data-theme="dark"] .polygin-msg-incoming {
+	background: #1e293b;
+	color: #e2e8f0;
+}
+[data-theme="dark"] .polygin-msg-outgoing {
+	background: #14532d;
+	color: #e2e8f0;
+}
+[data-theme="dark"] .polygin-msg-template {
+	background: #1e3a5f;
+	color: #e2e8f0;
+	border-color: #3b82f6;
+}
+[data-theme="dark"] .polygin-msg-meta {
+	color: #94a3b8;
+}
+[data-theme="dark"] .polygin-msg-agent {
+	color: #4ade80;
+}
+[data-theme="dark"] .polygin-msg-sender {
+	color: #34d399;
+}
+[data-theme="dark"] .polygin-date-separator span {
+	background: #1e293b;
+	color: #94a3b8;
+}
+[data-theme="dark"] .polygin-chat-input-area {
+	background: #1a1a2e;
+}
+[data-theme="dark"] .polygin-chat-input-wrapper {
+	background: #111827;
+}
+[data-theme="dark"] .polygin-chat-input-wrapper textarea {
+	color: #e2e8f0;
+}
+[data-theme="dark"] .polygin-chat-input-wrapper textarea::placeholder {
+	color: #64748b;
+}
+[data-theme="dark"] .polygin-chat-attach-btn {
+	color: #94a3b8;
+}
+[data-theme="dark"] .polygin-chat-response-window.active {
+	background: #14532d;
+	color: #86efac;
+}
+[data-theme="dark"] .polygin-chat-response-window.expired {
+	background: #7f1d1d;
+	color: #fca5a5;
+}
+[data-theme="dark"] .polygin-chat-expired-bar {
+	background: #422006;
+	border-top-color: #2a2a3e;
+}
+[data-theme="dark"] .polygin-chat-expired-bar p {
+	color: #fbbf24;
+}
+[data-theme="dark"] .polygin-chat-template-btn {
+	background: #1a1a2e;
+	color: #25D366;
+	border-color: #25D366;
+}
+[data-theme="dark"] .polygin-chat-template-btn:hover {
+	background: #25D366;
+	color: #111;
+}
+[data-theme="dark"] .polygin-chat-uploading {
+	background: #1e3a5f;
+	color: #93c5fd;
+}
+[data-theme="dark"] .polygin-chat-attach-menu {
+	background: #1e293b;
+	box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+[data-theme="dark"] .polygin-chat-attach-item {
+	color: #e2e8f0;
+}
+[data-theme="dark"] .polygin-chat-attach-item:hover {
+	background: #334155;
+}
+[data-theme="dark"] .polygin-msg-document {
+	background: rgba(255,255,255,0.06);
+	color: #e2e8f0;
+}
+[data-theme="dark"] .polygin-msg-document:hover {
+	background: rgba(255,255,255,0.1);
+}
+[data-theme="dark"] .polygin-char-count {
+	color: #64748b;
 }

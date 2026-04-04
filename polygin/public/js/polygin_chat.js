@@ -111,7 +111,6 @@ class PolyginChat {
 				</div>
 				<div class="polygin-chat-header-actions">
 					<span class="polygin-traffic-light polygin-tl-close" title="Close"></span>
-					<span class="polygin-traffic-light polygin-tl-minimize" title="Minimize"></span>
 					<span class="polygin-traffic-light polygin-tl-fullscreen" title="Fullscreen"></span>
 				</div>
 			</div>
@@ -132,9 +131,6 @@ class PolyginChat {
 		`);
 
 		this.$widget.find(".polygin-tl-close").on("click", () => this.collapse_to_bubble());
-		this.$widget.find(".polygin-tl-minimize").on("click", () => {
-			this.isFullscreen ? this.collapse_to_widget() : this.collapse_to_bubble();
-		});
 		this.$widget.find(".polygin-tl-fullscreen").on("click", () => {
 			this.isFullscreen ? this.collapse_to_widget() : this.expand_to_fullscreen();
 		});
@@ -294,7 +290,15 @@ class PolyginChat {
 	_update_input_state() {
 		if (!this.$widget) return;
 		const $container = this.$widget.find(".polygin-chat-input-container");
-		if (this.responseWindow.is_active) {
+		const isActive = this.responseWindow.is_active;
+		const hasInput = $container.find(".polygin-chat-input-area").length > 0;
+		const hasExpired = $container.find(".polygin-chat-expired-bar").length > 0;
+
+		// Only rebuild if the state actually changed
+		if (isActive && hasInput) return;
+		if (!isActive && hasExpired) return;
+
+		if (isActive) {
 			$container.html(`
 				<div class="polygin-chat-input-area">
 					<button class="polygin-chat-attach-btn" title="Attach">&#x1F4CE;</button>
