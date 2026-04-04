@@ -1011,20 +1011,24 @@ class PolyginChat {
 		const phone = PolyginChat.resolve_phone(frm);
 		if (phone) return phone;
 
-		// For Customer/Supplier, fetch from primary contact
+		// For Customer/Supplier, fetch from linked contacts
 		if (frm.doctype === "Customer" || frm.doctype === "Supplier") {
-			const linkField = frm.doctype === "Customer" ? "customer_primary_contact" : "supplier_primary_contact";
-			const contactName = frm.doc[linkField];
-			if (contactName) {
-				try {
-					const r = await frappe.xcall("frappe.client.get_value", {
-						doctype: "Contact",
-						filters: { name: contactName },
-						fieldname: ["mobile_no", "phone"],
-					});
-					if (r) return (r.mobile_no || r.phone || "").trim() || null;
-				} catch { /* ignore */ }
-			}
+			try {
+				const contacts = await frappe.xcall("frappe.client.get_list", {
+					doctype: "Contact",
+					filters: [
+						["Dynamic Link", "link_doctype", "=", frm.doctype],
+						["Dynamic Link", "link_name", "=", frm.docname],
+					],
+					fields: ["name", "mobile_no", "phone"],
+					limit_page_length: 1,
+				});
+				if (contacts && contacts.length > 0) {
+					const c = contacts[0];
+					const val = (c.mobile_no || c.phone || "").trim();
+					if (val) return val;
+				}
+			} catch { /* ignore */ }
 		}
 		return null;
 	}
