@@ -25,7 +25,7 @@ add_to_apps_screen = [
 
 # include js, css files in header of desk.html
 app_include_css = "/assets/polygin/css/polygin_chat.css?v=18"
-app_include_js = "/assets/polygin/js/polygin_chat.js?v=18"
+app_include_js = "/assets/polygin/js/polygin_chat.js?v=19"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/polygin/css/polygin.css"

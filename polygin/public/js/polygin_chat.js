@@ -406,33 +406,41 @@ class PolyginChat {
 	}
 
 	_send_template(templateName) {
-		frappe.call({
-			method: "polygin.api.send_whatsapp_template",
-			args: { doctype: this.doctype, docname: this.docname, template_name: templateName, phone: this.phone },
-			freeze: true, freeze_message: __("Sending..."),
-			callback: (r) => {
-				const resp = r.message || {};
-				if (resp.success) { frappe.show_alert({ message: resp.message || __("Sent!"), indicator: "green" }); setTimeout(() => this.fetch_messages(), 1500); }
-				else { frappe.msgprint(resp.message || __("Failed to send.")); }
-			},
-		});
+		frappe.prompt([
+			{ fieldname: "phone", label: "Send to", fieldtype: "Data", default: this.phone, reqd: 1 },
+		], (values) => {
+			frappe.call({
+				method: "polygin.api.send_whatsapp_template",
+				args: { doctype: this.doctype, docname: this.docname, template_name: templateName, phone: values.phone },
+				freeze: true, freeze_message: __("Sending..."),
+				callback: (r) => {
+					const resp = r.message || {};
+					if (resp.success) { frappe.show_alert({ message: resp.message || __("Sent!"), indicator: "green" }); setTimeout(() => this.fetch_messages(), 1500); }
+					else { frappe.msgprint(resp.message || __("Failed to send.")); }
+				},
+			});
+		}, __("Send Template"), __("Send"));
 	}
 
 	_send_document() {
-		frappe.call({
-			method: "polygin.api.send_document_via_template",
-			args: { doctype: this.doctype, docname: this.docname, phone: this.phone },
-			freeze: true, freeze_message: __("Sending document..."),
-			callback: (r) => {
-				const resp = r.message || {};
-				if (resp.success) {
-					frappe.show_alert({ message: resp.message || __("Document sent!"), indicator: "green" });
-					setTimeout(() => this.fetch_messages(), 1500);
-				} else {
-					frappe.msgprint(resp.message || __("Failed to send document."));
-				}
-			},
-		});
+		frappe.prompt([
+			{ fieldname: "phone", label: "Send to", fieldtype: "Data", default: this.phone, reqd: 1 },
+		], (values) => {
+			frappe.call({
+				method: "polygin.api.send_document_via_template",
+				args: { doctype: this.doctype, docname: this.docname, phone: values.phone },
+				freeze: true, freeze_message: __("Sending document..."),
+				callback: (r) => {
+					const resp = r.message || {};
+					if (resp.success) {
+						frappe.show_alert({ message: resp.message || __("Document sent!"), indicator: "green" });
+						setTimeout(() => this.fetch_messages(), 1500);
+					} else {
+						frappe.msgprint(resp.message || __("Failed to send document."));
+					}
+				},
+			});
+		}, __("Send Document"), __("Send"));
 	}
 
 	// ── Sending Messages ─────────────────────────────────────
