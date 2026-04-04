@@ -298,6 +298,12 @@
 	color: #075E54;
 	margin-bottom: 2px;
 }
+.polygin-msg-agent {
+	font-size: 12px;
+	font-weight: 600;
+	color: #1a6b4a;
+	margin-bottom: 2px;
+}
 
 /* ── Media in Messages ─────────────────────────────────────── */
 .polygin-msg-image img {

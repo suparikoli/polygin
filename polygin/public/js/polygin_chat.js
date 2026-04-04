@@ -237,7 +237,7 @@ class PolyginChat {
 		const dirClass = isTemplate ? "polygin-msg-template" : msg.direction === "outgoing" ? "polygin-msg-outgoing" : "polygin-msg-incoming";
 		let content = "";
 		if (isTemplate) content += `<div class="polygin-msg-badge">Template</div>`;
-		if (msg.direction === "incoming" && msg.sender_name) content += `<div class="polygin-msg-sender">${frappe.utils.escape_html(msg.sender_name)}</div>`;
+		if (msg.direction === "outgoing" && msg.responding_agent) content += `<div class="polygin-msg-agent">${frappe.utils.escape_html(msg.responding_agent)}</div>`;
 
 		if (msg.media_url && msg.message_type === "image") {
 			content += `<div class="polygin-msg-image"><img src="${frappe.utils.escape_html(msg.media_url)}" loading="lazy" onclick="window.open(this.src, '_blank')"></div>`;
@@ -377,7 +377,8 @@ class PolyginChat {
 					$textarea.val("").css("height", "auto");
 					this.$widget.find(".polygin-char-count").hide();
 					const now = new Date().toISOString().replace("T", " ").substring(0, 19);
-					const newMsg = { id: "local_" + Date.now(), direction: "outgoing", message: text, message_type: "text", media_url: null, timestamp: now, sender_name: frappe.session.user_fullname || "You", source: "message", origin: "outgoing" };
+					const agentName = frappe.session.user_fullname || "You";
+					const newMsg = { id: "local_" + Date.now(), direction: "outgoing", message: text, message_type: "text", media_url: null, timestamp: now, sender_name: agentName, responding_agent: agentName, source: "message", origin: "outgoing" };
 					this.messages.push(newMsg); this.messageIds.add(newMsg.id); this.render_messages();
 					const $list = this.$widget.find(".polygin-chat-messages"); $list[0].scrollTop = $list[0].scrollHeight;
 				} else { frappe.show_alert({ message: resp.message || __("Failed to send"), indicator: "red" }); }

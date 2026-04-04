@@ -14,6 +14,7 @@
   "uid",
   "origin",
   "direction",
+  "responding_agent",
   "normalized_phone",
   "raw_data"
  ],
@@ -70,6 +71,11 @@
    "fieldtype": "Select",
    "label": "Direction",
    "options": "incoming\noutgoing"
+  },
+  {
+   "fieldname": "responding_agent",
+   "fieldtype": "Data",
+   "label": "Responding Agent"
   },
   {
    "fieldname": "normalized_phone",
