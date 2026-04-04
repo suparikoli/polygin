@@ -498,6 +498,6 @@ def get_quick_replies():
 	return frappe.get_all(
 		"Polygin Quick Reply",
 		filters={"is_active": 1},
-		fields=["name", "title", "message", "shortcode"],
+		fields=["name", "title", "message", "message_type", "interactive_payload", "shortcode"],
 		order_by="title asc",
 	)

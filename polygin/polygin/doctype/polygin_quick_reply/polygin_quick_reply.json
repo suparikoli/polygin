@@ -6,7 +6,9 @@
  "engine": "InnoDB",
  "field_order": [
   "title",
+  "message_type",
   "message",
+  "interactive_payload",
   "shortcode",
   "is_active"
  ],
@@ -19,11 +21,27 @@
    "reqd": 1
   },
   {
+   "default": "text",
+   "fieldname": "message_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Message Type",
+   "options": "text\nbutton\nlist"
+  },
+  {
    "fieldname": "message",
    "fieldtype": "Small Text",
    "in_list_view": 1,
    "label": "Message",
-   "reqd": 1
+   "reqd": 1,
+   "description": "For text: the message body. For button/list: the body text of the interactive message."
+  },
+  {
+   "fieldname": "interactive_payload",
+   "fieldtype": "Long Text",
+   "label": "Interactive Payload",
+   "description": "JSON payload for button/list messages. Auto-populated from the chat widget composer.",
+   "depends_on": "eval:doc.message_type !== 'text'"
   },
   {
    "fieldname": "shortcode",

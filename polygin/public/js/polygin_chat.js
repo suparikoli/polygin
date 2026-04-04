@@ -51,7 +51,7 @@ class PolyginChat {
 		this.remove_bubble();
 		this.$bubble = $(`
 			<button class="polygin-chat-bubble" title="Chat via Polygin">
-				<img src="/assets/polygin/images/polygin_logo.webp" alt="Polygin" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+				<img src="/assets/polygin/images/polygin_logo.webp" alt="Polygin">
 			</button>
 		`);
 		this.$bubble.on("click", () => this.expand_to_widget());
@@ -441,7 +441,11 @@ class PolyginChat {
 	show_quick_replies() {
 		this._close_quick_replies();
 		this.close_attach_menu();
-		const $menu = $(`<div class="polygin-qr-menu"><div class="polygin-qr-loading">Loading quick replies...</div></div>`);
+
+		const $ta = this.$widget ? this.$widget.find("textarea") : null;
+		const typedText = ($ta && $ta.val() || "").trim();
+
+		const $menu = $(`<div class="polygin-qr-menu"><div class="polygin-qr-loading">Loading...</div></div>`);
 		this.$widget.find(".polygin-chat-input-container").append($menu);
 
 		frappe.call({
@@ -449,34 +453,91 @@ class PolyginChat {
 			callback: (r) => {
 				const replies = r.message || [];
 				$menu.empty();
-				if (replies.length === 0) {
-					$menu.html(`
-						<div class="polygin-qr-empty">
-							<p>No quick replies yet.</p>
-							<a href="/app/polygin-quick-reply/new" target="_blank" class="polygin-qr-create">+ Create Quick Reply</a>
-						</div>
-					`);
-					return;
-				}
+
+				// Header
 				$menu.append(`<div class="polygin-qr-header">&#x26A1; Quick Replies <a href="/app/polygin-quick-reply" target="_blank" class="polygin-qr-manage">Manage</a></div>`);
-				for (const qr of replies) {
-					const $item = $(`
-						<div class="polygin-qr-item" title="${frappe.utils.escape_html(qr.message)}">
-							<div class="polygin-qr-title">${frappe.utils.escape_html(qr.title)}</div>
-							<div class="polygin-qr-preview">${frappe.utils.escape_html((qr.message || "").substring(0, 60))}${qr.message.length > 60 ? "..." : ""}</div>
-							${qr.shortcode ? `<span class="polygin-qr-shortcode">/${frappe.utils.escape_html(qr.shortcode)}</span>` : ""}
+
+				// If text is typed, offer to save it as quick reply
+				if (typedText) {
+					const $save = $(`
+						<div class="polygin-qr-item polygin-qr-save">
+							<div class="polygin-qr-title">&#x2795; Save as Quick Reply</div>
+							<div class="polygin-qr-preview">"${frappe.utils.escape_html(typedText.substring(0, 50))}${typedText.length > 50 ? "..." : ""}"</div>
 						</div>
 					`);
-					$item.on("click", (e) => {
+					$save.on("click", (e) => {
 						e.stopPropagation();
 						this._close_quick_replies();
-						const $ta = this.$widget.find("textarea");
-						$ta.val(qr.message).trigger("input").focus();
+						this._save_quick_reply(typedText);
+					});
+					$menu.append($save);
+				}
+
+				if (replies.length === 0 && !typedText) {
+					$menu.append(`<div class="polygin-qr-empty"><p>No quick replies yet.</p><a href="/app/polygin-quick-reply/new" target="_blank" class="polygin-qr-create">+ Create Quick Reply</a></div>`);
+					return;
+				}
+
+				for (const qr of replies) {
+					const typeIcon = qr.message_type === "button" ? "&#x1F518;" : qr.message_type === "list" ? "&#x1F4CB;" : "&#x1F4AC;";
+					const $item = $(`
+						<div class="polygin-qr-item" title="${frappe.utils.escape_html(qr.message)}">
+							<div class="polygin-qr-title"><span class="polygin-qr-type-icon">${typeIcon}</span> ${frappe.utils.escape_html(qr.title)}</div>
+							<div class="polygin-qr-preview">${frappe.utils.escape_html((qr.message || "").substring(0, 50))}${(qr.message || "").length > 50 ? "..." : ""}</div>
+							<div class="polygin-qr-actions-row">
+								${qr.shortcode ? `<span class="polygin-qr-shortcode">/${frappe.utils.escape_html(qr.shortcode)}</span>` : ""}
+								<a href="/app/polygin-quick-reply/${qr.name}" target="_blank" class="polygin-qr-edit" title="Edit">&#x270E;</a>
+							</div>
+						</div>
+					`);
+					// Click item to use it
+					$item.on("click", (e) => {
+						if ($(e.target).hasClass("polygin-qr-edit")) return; // let edit link work
+						e.stopPropagation();
+						this._close_quick_replies();
+						if (qr.message_type === "text" || !qr.message_type) {
+							const $ta = this.$widget.find("textarea");
+							$ta.val(qr.message).trigger("input").focus();
+						} else {
+							// Interactive quick reply — send directly
+							let payload = null;
+							try { payload = qr.interactive_payload ? JSON.parse(qr.interactive_payload) : null; } catch { payload = null; }
+							if (payload) {
+								const type = qr.message_type === "button" ? "interactive_button" : "interactive_list";
+								this._send_interactive(type, payload, qr.message);
+							} else {
+								frappe.msgprint(__("This quick reply has no interactive payload configured. Edit it to add one."));
+							}
+						}
 					});
 					$menu.append($item);
 				}
 			},
 		});
+	}
+
+	_save_quick_reply(text) {
+		frappe.prompt([
+			{ fieldname: "title", label: "Title", fieldtype: "Data", reqd: 1 },
+			{ fieldname: "shortcode", label: "Shortcode (optional)", fieldtype: "Data" },
+		], (values) => {
+			frappe.call({
+				method: "frappe.client.insert",
+				args: {
+					doc: {
+						doctype: "Polygin Quick Reply",
+						title: values.title,
+						message: text,
+						message_type: "text",
+						shortcode: values.shortcode || "",
+						is_active: 1,
+					},
+				},
+				callback: () => {
+					frappe.show_alert({ message: __("Quick reply saved!"), indicator: "green" });
+				},
+			});
+		}, __("Save Quick Reply"), __("Save"));
 	}
 
 	_close_quick_replies() { $(".polygin-qr-menu").remove(); }
@@ -489,7 +550,6 @@ class PolyginChat {
 		try { data = msg.raw_data ? JSON.parse(msg.raw_data) : null; } catch { data = null; }
 
 		if (data && data.type === "list") {
-			// List message
 			html += `<div class="polygin-msg-text">${frappe.utils.escape_html(data.body?.text || msg.message || "")}</div>`;
 			if (data.action?.sections) {
 				html += `<div class="polygin-msg-interactive">`;
@@ -504,7 +564,6 @@ class PolyginChat {
 				html += `</div>`;
 			}
 		} else if (data && data.type === "button") {
-			// Button message
 			html += `<div class="polygin-msg-text">${frappe.utils.escape_html(data.body?.text || msg.message || "")}</div>`;
 			if (data.action?.buttons) {
 				html += `<div class="polygin-msg-buttons">`;
@@ -514,7 +573,9 @@ class PolyginChat {
 				html += `</div>`;
 			}
 		} else {
-			// Fallback: just show the message text
+			// Fallback — no raw_data, show badge + text
+			const badge = msg.message_type === "button" ? "Button Message" : "List Message";
+			html += `<div class="polygin-msg-badge polygin-int-badge">${badge}</div>`;
 			html += `<div class="polygin-msg-text">${frappe.utils.escape_html(msg.message || "[Interactive message]")}</div>`;
 		}
 		return html;
