@@ -1006,6 +1006,29 @@ class PolyginChat {
 		return null;
 	}
 
+	static async resolve_phone_async(frm) {
+		// Try sync first
+		const phone = PolyginChat.resolve_phone(frm);
+		if (phone) return phone;
+
+		// For Customer/Supplier, fetch from primary contact
+		if (frm.doctype === "Customer" || frm.doctype === "Supplier") {
+			const linkField = frm.doctype === "Customer" ? "customer_primary_contact" : "supplier_primary_contact";
+			const contactName = frm.doc[linkField];
+			if (contactName) {
+				try {
+					const r = await frappe.xcall("frappe.client.get_value", {
+						doctype: "Contact",
+						filters: { name: contactName },
+						fieldname: ["mobile_no", "phone"],
+					});
+					if (r) return (r.mobile_no || r.phone || "").trim() || null;
+				} catch { /* ignore */ }
+			}
+		}
+		return null;
+	}
+
 	static resolve_contact_name(frm) {
 		if (frm.doctype === "Lead") return frm.doc.lead_name || frm.doc.first_name || frm.doc.company_name || "";
 		if (frm.doctype === "Contact") return frm.doc.first_name ? `${frm.doc.first_name} ${frm.doc.last_name || ""}`.trim() : "";

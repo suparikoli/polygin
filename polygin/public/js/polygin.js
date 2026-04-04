@@ -86,8 +86,8 @@ function polygin_init_chat(frm) {
 
 	if (typeof PolyginChat === "undefined") return;
 
-	const mount = () => {
-		const phone = PolyginChat.resolve_phone(frm);
+	const mount = async () => {
+		const phone = await PolyginChat.resolve_phone_async(frm);
 		if (!phone) {
 			if (window._polygin_chat_instance) {
 				window._polygin_chat_instance.destroy();
