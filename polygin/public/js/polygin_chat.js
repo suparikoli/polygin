@@ -5,6 +5,22 @@
  * Loaded globally via app_include_js, instantiated from polygin.js per-form.
  */
 
+// WhatsApp character limits
+const WA_LIMITS = {
+	TEXT_BODY: 4096,
+	INTERACTIVE_BODY: 1024,
+	HEADER: 60,
+	FOOTER: 60,
+	BUTTON_TITLE: 20,
+	LIST_BUTTON_TEXT: 20,
+	SECTION_TITLE: 24,
+	ROW_TITLE: 24,
+	ROW_DESC: 72,
+	MAX_BUTTONS: 3,
+	MAX_ROWS: 10,
+	MAX_SECTIONS: 10,
+};
+
 class PolyginChat {
 	constructor({ phone, contact_name, doctype, docname }) {
 		this.phone = phone;
@@ -43,10 +59,7 @@ class PolyginChat {
 	}
 
 	remove_bubble() {
-		if (this.$bubble) {
-			this.$bubble.remove();
-			this.$bubble = null;
-		}
+		if (this.$bubble) { this.$bubble.remove(); this.$bubble = null; }
 	}
 
 	// ── Widget Panel ─────────────────────────────────────────
@@ -56,11 +69,9 @@ class PolyginChat {
 		this.remove_widget();
 		this.isOpen = true;
 		this.isFullscreen = false;
-
 		this.$widget = $(`<div class="polygin-chat-widget"></div>`);
 		this._render_widget_content();
 		$("body").append(this.$widget);
-
 		this.fetch_messages();
 		this.start_polling();
 	}
@@ -86,15 +97,11 @@ class PolyginChat {
 	}
 
 	remove_widget() {
-		if (this.$widget) {
-			this.$widget.remove();
-			this.$widget = null;
-		}
+		if (this.$widget) { this.$widget.remove(); this.$widget = null; }
 	}
 
 	_render_widget_content() {
 		const initials = (this.contact_name || "?").charAt(0).toUpperCase();
-
 		this.$widget.html(`
 			<div class="polygin-chat-header">
 				<div class="polygin-chat-avatar">${initials}</div>
@@ -116,40 +123,38 @@ class PolyginChat {
 				<div class="polygin-chat-input-area">
 					<button class="polygin-chat-attach-btn" title="Attach">&#x1F4CE;</button>
 					<div class="polygin-chat-input-wrapper">
-						<textarea rows="1" placeholder="Type a message..."></textarea>
+						<textarea rows="1" placeholder="Type a message..." maxlength="${WA_LIMITS.TEXT_BODY}"></textarea>
+						<span class="polygin-char-count" style="display:none;">0/${WA_LIMITS.TEXT_BODY}</span>
 					</div>
 					<button class="polygin-chat-send-btn" title="Send">&#x27A4;</button>
 				</div>
 			</div>
 		`);
 
-		// Event bindings — traffic light buttons
 		this.$widget.find(".polygin-tl-close").on("click", () => this.collapse_to_bubble());
 		this.$widget.find(".polygin-tl-minimize").on("click", () => {
-			if (this.isFullscreen) this.collapse_to_widget();
-			else this.collapse_to_bubble();
+			this.isFullscreen ? this.collapse_to_widget() : this.collapse_to_bubble();
 		});
 		this.$widget.find(".polygin-tl-fullscreen").on("click", () => {
 			this.isFullscreen ? this.collapse_to_widget() : this.expand_to_fullscreen();
 		});
 		this.$widget.find(".polygin-chat-send-btn").on("click", () => this.send_text_message());
 		this.$widget.find("textarea").on("keydown", (e) => {
-			if (e.key === "Enter" && !e.shiftKey) {
-				e.preventDefault();
-				this.send_text_message();
-			}
+			if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); this.send_text_message(); }
 		});
-		// Auto-resize textarea
 		this.$widget.find("textarea").on("input", function () {
 			this.style.height = "auto";
 			this.style.height = Math.min(this.scrollHeight, 100) + "px";
+			const $counter = $(this).siblings(".polygin-char-count");
+			const len = this.value.length;
+			$counter.text(`${len}/${WA_LIMITS.TEXT_BODY}`);
+			$counter.toggle(len > 0);
+			$counter.toggleClass("over-limit", len > WA_LIMITS.TEXT_BODY);
 		});
-		// Attach button
 		this.$widget.find(".polygin-chat-attach-btn").on("click", (e) => {
 			e.stopPropagation();
 			this.toggle_attach_menu();
 		});
-		// Close attach menu on outside click (only bind once)
 		$(document).off("click.polygin_attach").on("click.polygin_attach", () => this.close_attach_menu());
 	}
 
@@ -158,7 +163,6 @@ class PolyginChat {
 	fetch_messages() {
 		if (this.isLoading) return;
 		this.isLoading = true;
-
 		frappe.call({
 			method: "polygin.api.get_chat_messages",
 			args: { phone: this.phone, channel: "whatsapp", page: 1, page_size: 100 },
@@ -182,16 +186,12 @@ class PolyginChat {
 	}
 
 	stop_polling() {
-		if (this.pollInterval) {
-			clearInterval(this.pollInterval);
-			this.pollInterval = null;
-		}
+		if (this.pollInterval) { clearInterval(this.pollInterval); this.pollInterval = null; }
 	}
 
 	_poll_new() {
 		if (this.isLoading || !this.isOpen) return;
 		this.isLoading = true;
-
 		frappe.call({
 			method: "polygin.api.get_chat_messages",
 			args: { phone: this.phone, channel: "whatsapp", page: 1, page_size: 100 },
@@ -200,10 +200,7 @@ class PolyginChat {
 				const data = r.message;
 				const newMsgs = (data.messages || []).filter((m) => !this.messageIds.has(m.id));
 				if (newMsgs.length > 0) {
-					for (const m of newMsgs) {
-						this.messages.push(m);
-						this.messageIds.add(m.id);
-					}
+					for (const m of newMsgs) { this.messages.push(m); this.messageIds.add(m.id); }
 					this.messages.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
 					this.render_messages();
 				}
@@ -221,48 +218,27 @@ class PolyginChat {
 		if (!this.$widget) return;
 		const $list = this.$widget.find(".polygin-chat-messages");
 		const wasAtBottom = $list[0].scrollHeight - $list[0].scrollTop - $list[0].clientHeight < 60;
-
 		$list.empty();
-
 		if (this.messages.length === 0) {
 			$list.html('<div class="polygin-chat-empty">No messages yet</div>');
 			return;
 		}
-
 		let lastDate = "";
 		for (const msg of this.messages) {
 			const msgDate = this._format_date(msg.timestamp);
-			if (msgDate !== lastDate) {
-				lastDate = msgDate;
-				$list.append(`<div class="polygin-date-separator"><span>${msgDate}</span></div>`);
-			}
+			if (msgDate !== lastDate) { lastDate = msgDate; $list.append(`<div class="polygin-date-separator"><span>${msgDate}</span></div>`); }
 			$list.append(this._render_message(msg));
 		}
-
-		if (wasAtBottom) {
-			$list[0].scrollTop = $list[0].scrollHeight;
-		}
+		if (wasAtBottom) { $list[0].scrollTop = $list[0].scrollHeight; }
 	}
 
 	_render_message(msg) {
 		const isTemplate = msg.source === "template_log" || msg.message_type === "template";
-		const dirClass = isTemplate
-			? "polygin-msg-template"
-			: msg.direction === "outgoing"
-			? "polygin-msg-outgoing"
-			: "polygin-msg-incoming";
-
+		const dirClass = isTemplate ? "polygin-msg-template" : msg.direction === "outgoing" ? "polygin-msg-outgoing" : "polygin-msg-incoming";
 		let content = "";
+		if (isTemplate) content += `<div class="polygin-msg-badge">Template</div>`;
+		if (msg.direction === "incoming" && msg.sender_name) content += `<div class="polygin-msg-sender">${frappe.utils.escape_html(msg.sender_name)}</div>`;
 
-		if (isTemplate) {
-			content += `<div class="polygin-msg-badge">Template</div>`;
-		}
-
-		if (msg.direction === "incoming" && msg.sender_name) {
-			content += `<div class="polygin-msg-sender">${frappe.utils.escape_html(msg.sender_name)}</div>`;
-		}
-
-		// Media rendering
 		if (msg.media_url && msg.message_type === "image") {
 			content += `<div class="polygin-msg-image"><img src="${frappe.utils.escape_html(msg.media_url)}" loading="lazy" onclick="window.open(this.src, '_blank')"></div>`;
 		} else if (msg.media_url && msg.message_type === "video") {
@@ -271,18 +247,10 @@ class PolyginChat {
 			content += `<div class="polygin-msg-audio"><audio controls src="${frappe.utils.escape_html(msg.media_url)}"></audio></div>`;
 		} else if (msg.media_url && msg.message_type === "document") {
 			const fname = (msg.media_url || "").split("/").pop() || "Document";
-			content += `<a class="polygin-msg-document" href="${frappe.utils.escape_html(msg.media_url)}" target="_blank">
-				<span class="polygin-msg-doc-icon">&#x1F4C4;</span>
-				<span class="polygin-msg-doc-name">${frappe.utils.escape_html(fname)}</span>
-			</a>`;
+			content += `<a class="polygin-msg-document" href="${frappe.utils.escape_html(msg.media_url)}" target="_blank"><span class="polygin-msg-doc-icon">&#x1F4C4;</span><span class="polygin-msg-doc-name">${frappe.utils.escape_html(fname)}</span></a>`;
 		}
-
-		if (msg.message) {
-			content += `<div class="polygin-msg-text">${frappe.utils.escape_html(msg.message)}</div>`;
-		}
-
+		if (msg.message) content += `<div class="polygin-msg-text">${frappe.utils.escape_html(msg.message)}</div>`;
 		content += `<div class="polygin-msg-meta">${this._format_time(msg.timestamp)}</div>`;
-
 		return `<div class="polygin-msg ${dirClass}">${content}</div>`;
 	}
 
@@ -292,14 +260,13 @@ class PolyginChat {
 		if (!this.$widget) return;
 		const $rw = this.$widget.find(".polygin-chat-response-window");
 		$rw.show();
-
 		if (this.responseWindow.is_active) {
 			$rw.removeClass("expired").addClass("active");
 			this._start_countdown(this.responseWindow.seconds_remaining);
 		} else {
 			$rw.removeClass("active").addClass("expired");
 			this.stop_countdown();
-			$rw.html(`<span class="rw-icon">&#x26A0;</span> Response window expired — send a template to re-engage`);
+			$rw.html(`<span class="rw-icon">&#x26A0;</span> Response window expired \u2014 send a template to re-engage`);
 		}
 	}
 
@@ -308,43 +275,32 @@ class PolyginChat {
 		let remaining = seconds;
 		const $rw = this.$widget ? this.$widget.find(".polygin-chat-response-window") : null;
 		if (!$rw || !$rw.length) return;
-
 		const update = () => {
 			remaining = Math.max(0, remaining);
-			if (remaining <= 0) {
-				this.responseWindow.is_active = false;
-				this.render_response_window();
-				this._update_input_state();
-				return;
-			}
+			if (remaining <= 0) { this.responseWindow.is_active = false; this.render_response_window(); this._update_input_state(); return; }
 			const h = Math.floor(remaining / 3600);
 			const m = Math.floor((remaining % 3600) / 60);
 			$rw.html(`<span class="rw-icon">&#x23F0;</span> Response window: ${h}h ${m}m remaining`);
 			remaining--;
 		};
-
 		update();
 		this.countdownInterval = setInterval(update, 1000);
 	}
 
 	stop_countdown() {
-		if (this.countdownInterval) {
-			clearInterval(this.countdownInterval);
-			this.countdownInterval = null;
-		}
+		if (this.countdownInterval) { clearInterval(this.countdownInterval); this.countdownInterval = null; }
 	}
 
 	_update_input_state() {
 		if (!this.$widget) return;
 		const $container = this.$widget.find(".polygin-chat-input-container");
-
 		if (this.responseWindow.is_active) {
-			// Show normal input
 			$container.html(`
 				<div class="polygin-chat-input-area">
 					<button class="polygin-chat-attach-btn" title="Attach">&#x1F4CE;</button>
 					<div class="polygin-chat-input-wrapper">
-						<textarea rows="1" placeholder="Type a message..."></textarea>
+						<textarea rows="1" placeholder="Type a message..." maxlength="${WA_LIMITS.TEXT_BODY}"></textarea>
+						<span class="polygin-char-count" style="display:none;">0/${WA_LIMITS.TEXT_BODY}</span>
 					</div>
 					<button class="polygin-chat-send-btn" title="Send">&#x27A4;</button>
 				</div>
@@ -356,85 +312,47 @@ class PolyginChat {
 			this.$widget.find("textarea").on("input", function () {
 				this.style.height = "auto";
 				this.style.height = Math.min(this.scrollHeight, 100) + "px";
+				const $counter = $(this).siblings(".polygin-char-count");
+				const len = this.value.length;
+				$counter.text(`${len}/${WA_LIMITS.TEXT_BODY}`);
+				$counter.toggle(len > 0);
+				$counter.toggleClass("over-limit", len > WA_LIMITS.TEXT_BODY);
 			});
-			this.$widget.find(".polygin-chat-attach-btn").on("click", (e) => {
-				e.stopPropagation();
-				this.toggle_attach_menu();
-			});
+			this.$widget.find(".polygin-chat-attach-btn").on("click", (e) => { e.stopPropagation(); this.toggle_attach_menu(); });
 		} else {
-			// Show expired state with template buttons
 			this._load_template_buttons($container);
 		}
 	}
 
 	_load_template_buttons($container) {
-		if (this.templateButtons !== null) {
-			this._render_expired_input($container, this.templateButtons);
-			return;
-		}
+		if (this.templateButtons !== null) { this._render_expired_input($container, this.templateButtons); return; }
 		frappe.call({
 			method: "polygin.api.get_buttons",
-			callback: (r) => {
-				this.templateButtons = r.message || [];
-				this._render_expired_input($container, this.templateButtons);
-			},
+			callback: (r) => { this.templateButtons = r.message || []; this._render_expired_input($container, this.templateButtons); },
 		});
 	}
 
 	_render_expired_input($container, buttons) {
-		let btnHtml = "";
-		if (buttons.length > 0) {
-			btnHtml = buttons.map((b) =>
-				`<button class="polygin-chat-template-btn" data-template="${frappe.utils.escape_html(b.template_name)}">${frappe.utils.escape_html(b.button_name)}</button>`
-			).join("");
-		} else {
-			btnHtml = `<span style="color:#856404;font-size:13px;">No templates configured.</span>`;
-		}
-
-		$container.html(`
-			<div class="polygin-chat-expired-bar">
-				<p>24-hour response window expired. Send a template to re-engage.</p>
-				<div class="polygin-chat-template-btns">${btnHtml}</div>
-			</div>
-		`);
-
+		let btnHtml = buttons.length > 0
+			? buttons.map((b) => `<button class="polygin-chat-template-btn" data-template="${frappe.utils.escape_html(b.template_name)}">${frappe.utils.escape_html(b.button_name)}</button>`).join("")
+			: `<span style="color:#856404;font-size:13px;">No templates configured.</span>`;
+		$container.html(`<div class="polygin-chat-expired-bar"><p>24-hour response window expired. Send a template to re-engage.</p><div class="polygin-chat-template-btns">${btnHtml}</div></div>`);
 		$container.find(".polygin-chat-template-btn").on("click", (e) => {
-			const templateName = $(e.target).data("template");
-			if (!templateName) return;
-			this._send_template(templateName);
+			const tn = $(e.target).data("template"); if (!tn) return; this._send_template(tn);
 		});
 	}
 
 	_send_template(templateName) {
-		// Determine best target field for the current doctype
-		const fieldMap = {
-			Lead: ["whatsapp_no", "mobile_no", "phone"],
-			Contact: ["mobile_no", "phone"],
-			Customer: ["mobile_no"],
-			Opportunity: ["whatsapp", "phone"],
-		};
-		const fields = fieldMap[this.doctype] || ["mobile_no"];
-		const targetField = fields[0]; // use the first available
-
+		const fieldMap = { Lead: ["whatsapp_no", "mobile_no", "phone"], Contact: ["mobile_no", "phone"], Customer: ["mobile_no"], Opportunity: ["whatsapp", "phone"] };
+		const targetField = (fieldMap[this.doctype] || ["mobile_no"])[0];
 		frappe.call({
 			method: "polygin.api.send_whatsapp_template",
-			args: {
-				doctype: this.doctype,
-				docname: this.docname,
-				template_name: templateName,
-				target_field: targetField,
-			},
-			freeze: true,
-			freeze_message: __("Sending template..."),
+			args: { doctype: this.doctype, docname: this.docname, template_name: templateName, target_field: targetField },
+			freeze: true, freeze_message: __("Sending template..."),
 			callback: (r) => {
 				const resp = r.message || {};
-				if (resp.success) {
-					frappe.show_alert({ message: __("Template sent!"), indicator: "green" });
-					// Re-fetch messages to show the new template
-					setTimeout(() => this.fetch_messages(), 1500);
-				} else {
-					frappe.msgprint(resp.message || __("Failed to send template."));
-				}
+				if (resp.success) { frappe.show_alert({ message: __("Template sent!"), indicator: "green" }); setTimeout(() => this.fetch_messages(), 1500); }
+				else { frappe.msgprint(resp.message || __("Failed to send template.")); }
 			},
 		});
 	}
@@ -446,10 +364,10 @@ class PolyginChat {
 		const $textarea = this.$widget.find("textarea");
 		const text = ($textarea.val() || "").trim();
 		if (!text) return;
+		if (text.length > WA_LIMITS.TEXT_BODY) { frappe.show_alert({ message: __(`Message exceeds ${WA_LIMITS.TEXT_BODY} character limit`), indicator: "red" }); return; }
 
 		this.isSending = true;
 		this.$widget.find(".polygin-chat-send-btn").prop("disabled", true);
-
 		frappe.call({
 			method: "polygin.api.send_chat_message",
 			args: { phone: this.phone, message_type: "text", content: text },
@@ -457,201 +375,135 @@ class PolyginChat {
 				const resp = r.message || {};
 				if (resp.success) {
 					$textarea.val("").css("height", "auto");
-					// Optimistic: add the message locally
+					this.$widget.find(".polygin-char-count").hide();
 					const now = new Date().toISOString().replace("T", " ").substring(0, 19);
-					const newMsg = {
-						id: "local_" + Date.now(),
-						direction: "outgoing",
-						message: text,
-						message_type: "text",
-						media_url: null,
-						timestamp: now,
-						sender_name: frappe.session.user_fullname || "You",
-						source: "message",
-						origin: "outgoing",
-					};
-					this.messages.push(newMsg);
-					this.messageIds.add(newMsg.id);
-					this.render_messages();
-					// Scroll to bottom
-					const $list = this.$widget.find(".polygin-chat-messages");
-					$list[0].scrollTop = $list[0].scrollHeight;
-				} else {
-					frappe.show_alert({ message: resp.message || __("Failed to send"), indicator: "red" });
-				}
+					const newMsg = { id: "local_" + Date.now(), direction: "outgoing", message: text, message_type: "text", media_url: null, timestamp: now, sender_name: frappe.session.user_fullname || "You", source: "message", origin: "outgoing" };
+					this.messages.push(newMsg); this.messageIds.add(newMsg.id); this.render_messages();
+					const $list = this.$widget.find(".polygin-chat-messages"); $list[0].scrollTop = $list[0].scrollHeight;
+				} else { frappe.show_alert({ message: resp.message || __("Failed to send"), indicator: "red" }); }
 			},
-			error: () => {
-				frappe.show_alert({ message: __("Failed to send message"), indicator: "red" });
-			},
-			always: () => {
-				this.isSending = false;
-				if (this.$widget) this.$widget.find(".polygin-chat-send-btn").prop("disabled", false);
-			},
+			error: () => { frappe.show_alert({ message: __("Failed to send message"), indicator: "red" }); },
+			always: () => { this.isSending = false; if (this.$widget) this.$widget.find(".polygin-chat-send-btn").prop("disabled", false); },
 		});
 	}
 
 	// ── Attachments ──────────────────────────────────────────
 
-	toggle_attach_menu() {
-		if (this.attachMenuOpen) {
-			this.close_attach_menu();
-		} else {
-			this.show_attach_menu();
-		}
-	}
+	toggle_attach_menu() { this.attachMenuOpen ? this.close_attach_menu() : this.show_attach_menu(); }
 
 	show_attach_menu() {
 		this.close_attach_menu();
 		this.attachMenuOpen = true;
-
 		const $menu = $(`
 			<div class="polygin-chat-attach-menu">
-				<div class="polygin-chat-attach-item" data-type="image">
-					<span class="attach-icon">&#x1F5BC;</span> Image
-				</div>
-				<div class="polygin-chat-attach-item" data-type="video">
-					<span class="attach-icon">&#x1F3AC;</span> Video
-				</div>
-				<div class="polygin-chat-attach-item" data-type="audio">
-					<span class="attach-icon">&#x1F3B5;</span> Audio
-				</div>
-				<div class="polygin-chat-attach-item" data-type="document">
-					<span class="attach-icon">&#x1F4C4;</span> Document
-				</div>
-				<div class="polygin-chat-attach-item" data-type="interactive_list">
-					<span class="attach-icon">&#x1F4CB;</span> List Message
-				</div>
-				<div class="polygin-chat-attach-item" data-type="interactive_button">
-					<span class="attach-icon">&#x1F518;</span> Reply Buttons
-				</div>
+				<div class="polygin-chat-attach-item" data-type="image"><span class="attach-icon">&#x1F5BC;</span> Image</div>
+				<div class="polygin-chat-attach-item" data-type="video"><span class="attach-icon">&#x1F3AC;</span> Video</div>
+				<div class="polygin-chat-attach-item" data-type="audio"><span class="attach-icon">&#x1F3B5;</span> Audio</div>
+				<div class="polygin-chat-attach-item" data-type="document"><span class="attach-icon">&#x1F4C4;</span> Document</div>
+				<div class="polygin-chat-attach-item" data-type="interactive_list"><span class="attach-icon">&#x1F4CB;</span> List Message</div>
+				<div class="polygin-chat-attach-item" data-type="interactive_button"><span class="attach-icon">&#x1F518;</span> Button Message</div>
 			</div>
 		`);
-
 		$menu.find(".polygin-chat-attach-item").on("click", (e) => {
 			e.stopPropagation();
 			const type = $(e.currentTarget).data("type");
 			this.close_attach_menu();
-			if (type === "interactive_list") {
-				this.show_list_composer();
-			} else if (type === "interactive_button") {
-				this.show_button_composer();
-			} else {
-				this._pick_file(type);
-			}
+			if (type === "interactive_list") this.show_list_composer();
+			else if (type === "interactive_button") this.show_button_composer();
+			else this._pick_file_erpnext(type);
 		});
-
 		this.$widget.find(".polygin-chat-input-container").append($menu);
 	}
 
-	close_attach_menu() {
-		this.attachMenuOpen = false;
-		$(".polygin-chat-attach-menu").remove();
-	}
+	close_attach_menu() { this.attachMenuOpen = false; $(".polygin-chat-attach-menu").remove(); }
 
-	_pick_file(type) {
-		const acceptMap = {
-			image: "image/jpeg,image/png,image/webp",
-			video: "video/mp4,video/3gpp",
-			audio: "audio/mpeg,audio/aac,audio/mp4,audio/amr,audio/opus",
-			document: ".pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx,.txt",
+	// ── File Upload via ERPNext File Manager ──────────────────
+
+	_pick_file_erpnext(type) {
+		const limitMap = { image: 5, video: 16, audio: 16, document: 75 };
+		const restrictMap = {
+			image: { allowed_file_types: ["image/*"] },
+			video: { allowed_file_types: ["video/*"] },
+			audio: { allowed_file_types: ["audio/*"] },
+			document: {},
 		};
-		const limitMap = { image: 5, video: 16, audio: 16, document: 75 }; // MB
 
-		const $input = $(`<input type="file" accept="${acceptMap[type] || "*/*"}" style="display:none">`);
-		$("body").append($input);
-
-		$input.on("change", () => {
-			const file = $input[0].files[0];
-			$input.remove();
-			if (!file) return;
-
-			const sizeMB = file.size / (1024 * 1024);
-			if (sizeMB > (limitMap[type] || 75)) {
-				frappe.msgprint(__(`File too large. Max size for ${type}: ${limitMap[type]}MB`));
-				return;
-			}
-			this._upload_and_send(file, type);
-		});
-
-		$input.trigger("click");
-	}
-
-	_upload_and_send(file, type) {
-		// Show uploading indicator
-		if (this.$widget) {
-			this.$widget.find(".polygin-chat-uploading").remove();
-			this.$widget.find(".polygin-chat-input-container").before(
-				`<div class="polygin-chat-uploading">Uploading ${type}...</div>`
-			);
-		}
-
-		const formData = new FormData();
-		formData.append("file", file);
-
-		$.ajax({
-			url: "/api/method/polygin.api.upload_chat_media",
-			type: "POST",
-			data: formData,
-			processData: false,
-			contentType: false,
-			headers: { "X-Frappe-CSRF-Token": frappe.csrf_token },
-			success: (r) => {
-				if (this.$widget) this.$widget.find(".polygin-chat-uploading").remove();
-				const data = r.message || {};
-				if (!data.success) {
-					frappe.msgprint(data.message || __("Upload failed"));
+		new frappe.ui.FileUploader({
+			doctype: "Polygin Wa Messages",
+			docname: null,
+			make_attachments_public: true,
+			restrictions: restrictMap[type] || {},
+			on_success: (file) => {
+				let file_url = file.file_url;
+				if (file_url && !file_url.startsWith("http")) {
+					file_url = frappe.urllib.get_full_url(file_url);
+				}
+				// Check file size
+				if (file.file_size && file.file_size / (1024 * 1024) > (limitMap[type] || 75)) {
+					frappe.show_alert({ message: __(`File too large. Max: ${limitMap[type]}MB for ${type}`), indicator: "red" });
 					return;
 				}
-				// Now send the message with the file URL
-				frappe.call({
-					method: "polygin.api.send_chat_message",
-					args: {
-						phone: this.phone,
-						message_type: type,
-						media_url: data.file_url,
-						caption: file.name,
-					},
-					callback: (r2) => {
-						const resp = r2.message || {};
-						if (resp.success) {
-							frappe.show_alert({ message: __(`${type} sent!`), indicator: "green" });
-							setTimeout(() => this.fetch_messages(), 1000);
-						} else {
-							frappe.msgprint(resp.message || __("Failed to send"));
-						}
-					},
-				});
-			},
-			error: () => {
-				frappe.show_alert({ message: __("File upload failed"), indicator: "red" });
-			},
-			complete: () => {
-				if (this.$widget) this.$widget.find(".polygin-chat-uploading").remove();
+				this._send_media(file_url, type, file.file_name);
 			},
 		});
 	}
 
-	// ── Interactive Message Composers ─────────────────────────
+	_send_media(file_url, type, file_name) {
+		if (this.$widget) {
+			this.$widget.find(".polygin-chat-uploading").remove();
+			this.$widget.find(".polygin-chat-input-container").before(`<div class="polygin-chat-uploading">Sending ${type}...</div>`);
+		}
+		frappe.call({
+			method: "polygin.api.send_chat_message",
+			args: { phone: this.phone, message_type: type, media_url: file_url, caption: file_name || "" },
+			callback: (r) => {
+				const resp = r.message || {};
+				if (resp.success) {
+					frappe.show_alert({ message: __(`${type} sent!`), indicator: "green" });
+					setTimeout(() => this.fetch_messages(), 1000);
+				} else { frappe.msgprint(resp.message || __("Failed to send")); }
+			},
+			always: () => { if (this.$widget) this.$widget.find(".polygin-chat-uploading").remove(); },
+		});
+	}
+
+	// ── List Message Composer ─────────────────────────────────
 
 	show_list_composer() {
 		if (!this.$widget) return;
 		const $overlay = $(`
 			<div class="polygin-interactive-overlay">
-				<div class="polygin-interactive-modal">
-					<h4>List Message</h4>
-					<label>Header</label>
-					<input type="text" class="list-header" placeholder="Header text">
-					<label>Body</label>
-					<textarea class="list-body" rows="2" placeholder="Body text (required)"></textarea>
-					<label>Footer</label>
-					<input type="text" class="list-footer" placeholder="Footer text">
-					<label>Button Text</label>
-					<input type="text" class="list-button" placeholder="e.g. Choose option" value="Choose option">
-					<label>Section Title</label>
-					<input type="text" class="list-section-title" placeholder="Section 1">
-					<label>Options (one per line: id | title | description)</label>
-					<textarea class="list-options" rows="4" placeholder="opt1 | Option 1 | Description here&#10;opt2 | Option 2 | Another desc"></textarea>
-					<div class="modal-actions">
+				<div class="polygin-interactive-modal polygin-composer">
+					<div class="composer-header">
+						<h4>List Message</h4>
+						<button class="composer-close">&times;</button>
+					</div>
+					<div class="composer-body">
+						<div class="composer-field">
+							<label>Header text</label>
+							<input type="text" class="lc-header" placeholder="Header text" maxlength="${WA_LIMITS.HEADER}">
+							<span class="char-hint lc-header-count">0/${WA_LIMITS.HEADER}</span>
+						</div>
+						<div class="composer-field">
+							<label>Body text <span class="required">*</span></label>
+							<textarea class="lc-body" rows="3" placeholder="Body text" maxlength="${WA_LIMITS.INTERACTIVE_BODY}"></textarea>
+							<span class="char-hint lc-body-count">0/${WA_LIMITS.INTERACTIVE_BODY}</span>
+						</div>
+						<div class="composer-field">
+							<label>Footer (optional)</label>
+							<input type="text" class="lc-footer" placeholder="Footer (optional)" maxlength="${WA_LIMITS.FOOTER}">
+							<span class="char-hint lc-footer-count">0/${WA_LIMITS.FOOTER}</span>
+						</div>
+						<div class="composer-field">
+							<label>Button label</label>
+							<input type="text" class="lc-button" placeholder="e.g. View Options" value="View Options" maxlength="${WA_LIMITS.LIST_BUTTON_TEXT}">
+							<span class="char-hint lc-button-count">0/${WA_LIMITS.LIST_BUTTON_TEXT}</span>
+						</div>
+						<div class="composer-sections"></div>
+						<button class="composer-add-section">+ Add Section</button>
+					</div>
+					<div class="composer-footer-info">Fill in the required fields to send.</div>
+					<div class="composer-actions">
 						<button class="btn-cancel">Cancel</button>
 						<button class="btn-send">Send</button>
 					</div>
@@ -659,27 +511,50 @@ class PolyginChat {
 			</div>
 		`);
 
-		$overlay.find(".btn-cancel").on("click", () => $overlay.remove());
+		// Wire char counts
+		this._wireCharCount($overlay, ".lc-header", ".lc-header-count", WA_LIMITS.HEADER);
+		this._wireCharCount($overlay, ".lc-body", ".lc-body-count", WA_LIMITS.INTERACTIVE_BODY);
+		this._wireCharCount($overlay, ".lc-footer", ".lc-footer-count", WA_LIMITS.FOOTER);
+		this._wireCharCount($overlay, ".lc-button", ".lc-button-count", WA_LIMITS.LIST_BUTTON_TEXT);
+
+		// Add initial section
+		this._addListSection($overlay.find(".composer-sections"));
+
+		$overlay.find(".composer-add-section").on("click", () => {
+			const $sections = $overlay.find(".composer-sections");
+			if ($sections.children().length >= WA_LIMITS.MAX_SECTIONS) { frappe.show_alert({ message: __(`Max ${WA_LIMITS.MAX_SECTIONS} sections`), indicator: "orange" }); return; }
+			this._addListSection($sections);
+		});
+
+		$overlay.find(".composer-close, .btn-cancel").on("click", () => $overlay.remove());
 		$overlay.find(".btn-send").on("click", () => {
-			const body = $overlay.find(".list-body").val().trim();
+			const body = $overlay.find(".lc-body").val().trim();
 			if (!body) { frappe.msgprint(__("Body text is required")); return; }
 
-			const rows = $overlay.find(".list-options").val().trim().split("\n").filter(Boolean).map((line) => {
-				const parts = line.split("|").map((s) => s.trim());
-				return { id: parts[0] || "", title: parts[1] || parts[0] || "", description: parts[2] || "" };
+			// Collect sections
+			const sections = [];
+			let totalRows = 0;
+			$overlay.find(".list-section").each(function () {
+				const title = $(this).find(".section-title-input").val().trim();
+				const rows = [];
+				$(this).find(".list-option-row").each(function () {
+					const rowTitle = $(this).find(".opt-title").val().trim();
+					if (rowTitle) { rows.push({ id: rowTitle.toLowerCase().replace(/\s+/g, "_").substring(0, 24), title: rowTitle, description: $(this).find(".opt-desc").val().trim() }); }
+				});
+				totalRows += rows.length;
+				if (rows.length > 0) sections.push({ title: title || "Options", rows });
 			});
+
+			if (totalRows === 0) { frappe.msgprint(__("Add at least one option")); return; }
+			if (totalRows > WA_LIMITS.MAX_ROWS) { frappe.msgprint(__(`Max ${WA_LIMITS.MAX_ROWS} options total across all sections`)); return; }
 
 			const interactive = {
 				type: "list",
-				header: { type: "text", text: $overlay.find(".list-header").val().trim() || "" },
+				header: { type: "text", text: $overlay.find(".lc-header").val().trim() },
 				body: { text: body },
-				footer: { text: $overlay.find(".list-footer").val().trim() || "" },
-				action: {
-					button: $overlay.find(".list-button").val().trim() || "Choose",
-					sections: [{ title: $overlay.find(".list-section-title").val().trim() || "Options", rows: rows }],
-				},
+				footer: { text: $overlay.find(".lc-footer").val().trim() },
+				action: { button: $overlay.find(".lc-button").val().trim() || "View Options", sections },
 			};
-
 			$overlay.remove();
 			this._send_interactive("interactive_list", interactive, body);
 		});
@@ -687,17 +562,84 @@ class PolyginChat {
 		this.$widget.append($overlay);
 	}
 
+	_addListSection($container) {
+		const idx = $container.children().length + 1;
+		const $section = $(`
+			<div class="list-section">
+				<div class="section-header">
+					<span class="section-icon">&#x2630;</span>
+					<input type="text" class="section-title-input" placeholder="Section ${idx}" maxlength="${WA_LIMITS.SECTION_TITLE}">
+					<span class="char-hint section-title-count">0/${WA_LIMITS.SECTION_TITLE}</span>
+					<button class="section-delete" title="Remove section">&#x1F5D1;</button>
+					<button class="section-toggle" title="Collapse">&#x25B2;</button>
+				</div>
+				<div class="section-options"></div>
+				<button class="section-add-option">+ Add Option</button>
+			</div>
+		`);
+
+		this._wireCharCount($section, ".section-title-input", ".section-title-count", WA_LIMITS.SECTION_TITLE);
+
+		// Add 2 default options
+		this._addListOption($section.find(".section-options"));
+		this._addListOption($section.find(".section-options"));
+
+		$section.find(".section-add-option").on("click", () => {
+			const totalRows = $container.closest(".polygin-composer").find(".list-option-row").length;
+			if (totalRows >= WA_LIMITS.MAX_ROWS) { frappe.show_alert({ message: __(`Max ${WA_LIMITS.MAX_ROWS} options total`), indicator: "orange" }); return; }
+			this._addListOption($section.find(".section-options"));
+		});
+		$section.find(".section-delete").on("click", () => { if ($container.children().length > 1) $section.remove(); });
+		$section.find(".section-toggle").on("click", function () {
+			$section.find(".section-options, .section-add-option").toggle();
+			$(this).text($section.find(".section-options").is(":visible") ? "\u25B2" : "\u25BC");
+		});
+
+		$container.append($section);
+	}
+
+	_addListOption($container) {
+		const idx = $container.children().length + 1;
+		const $row = $(`
+			<div class="list-option-row">
+				<div class="opt-num">${idx}</div>
+				<div class="opt-fields">
+					<input type="text" class="opt-title" placeholder="Option title" maxlength="${WA_LIMITS.ROW_TITLE}">
+					<span class="char-hint opt-title-count">0/${WA_LIMITS.ROW_TITLE}</span>
+					<input type="text" class="opt-desc" placeholder="Description" maxlength="${WA_LIMITS.ROW_DESC}">
+					<span class="char-hint opt-desc-count">0/${WA_LIMITS.ROW_DESC}</span>
+				</div>
+				<button class="opt-delete" title="Remove">&#x1F5D1;</button>
+			</div>
+		`);
+		this._wireCharCount($row, ".opt-title", ".opt-title-count", WA_LIMITS.ROW_TITLE);
+		this._wireCharCount($row, ".opt-desc", ".opt-desc-count", WA_LIMITS.ROW_DESC);
+		$row.find(".opt-delete").on("click", () => { if ($container.children().length > 1) $row.remove(); });
+		$container.append($row);
+	}
+
+	// ── Button Message Composer ──────────────────────────────
+
 	show_button_composer() {
 		if (!this.$widget) return;
 		const $overlay = $(`
 			<div class="polygin-interactive-overlay">
-				<div class="polygin-interactive-modal">
-					<h4>Reply Buttons</h4>
-					<label>Body</label>
-					<textarea class="btn-body" rows="2" placeholder="Choose an option (required)"></textarea>
-					<label>Buttons (one per line: id | title, max 3)</label>
-					<textarea class="btn-options" rows="3" placeholder="yes | Yes&#10;no | No&#10;maybe | Maybe"></textarea>
-					<div class="modal-actions">
+				<div class="polygin-interactive-modal polygin-composer">
+					<div class="composer-header">
+						<h4>Button Message</h4>
+						<button class="composer-close">&times;</button>
+					</div>
+					<div class="composer-body">
+						<div class="composer-field">
+							<label>Message body <span class="required">*</span></label>
+							<textarea class="bc-body" rows="4" placeholder="Type your message..." maxlength="${WA_LIMITS.INTERACTIVE_BODY}"></textarea>
+							<span class="char-hint bc-body-count">0/${WA_LIMITS.INTERACTIVE_BODY}</span>
+						</div>
+						<div class="button-list"></div>
+						<button class="composer-add-button">+ Add Button</button>
+					</div>
+					<div class="composer-footer-info">Fill in the required fields to send.</div>
+					<div class="composer-actions">
 						<button class="btn-cancel">Cancel</button>
 						<button class="btn-send">Send</button>
 					</div>
@@ -705,24 +647,30 @@ class PolyginChat {
 			</div>
 		`);
 
-		$overlay.find(".btn-cancel").on("click", () => $overlay.remove());
+		this._wireCharCount($overlay, ".bc-body", ".bc-body-count", WA_LIMITS.INTERACTIVE_BODY);
+
+		// Add initial button
+		this._addReplyButton($overlay.find(".button-list"));
+
+		$overlay.find(".composer-add-button").on("click", () => {
+			const $list = $overlay.find(".button-list");
+			if ($list.children().length >= WA_LIMITS.MAX_BUTTONS) { frappe.show_alert({ message: __(`Max ${WA_LIMITS.MAX_BUTTONS} buttons`), indicator: "orange" }); return; }
+			this._addReplyButton($list);
+		});
+
+		$overlay.find(".composer-close, .btn-cancel").on("click", () => $overlay.remove());
 		$overlay.find(".btn-send").on("click", () => {
-			const body = $overlay.find(".btn-body").val().trim();
-			if (!body) { frappe.msgprint(__("Body text is required")); return; }
+			const body = $overlay.find(".bc-body").val().trim();
+			if (!body) { frappe.msgprint(__("Message body is required")); return; }
 
-			const buttons = $overlay.find(".btn-options").val().trim().split("\n").filter(Boolean).slice(0, 3).map((line) => {
-				const parts = line.split("|").map((s) => s.trim());
-				return { type: "reply", reply: { id: parts[0] || "", title: parts[1] || parts[0] || "" } };
+			const buttons = [];
+			$overlay.find(".button-entry").each(function () {
+				const title = $(this).find(".btn-title-input").val().trim();
+				if (title) buttons.push({ type: "reply", reply: { id: title.toLowerCase().replace(/\s+/g, "_").substring(0, 20), title } });
 			});
-
 			if (buttons.length === 0) { frappe.msgprint(__("Add at least one button")); return; }
 
-			const interactive = {
-				type: "button",
-				body: { text: body },
-				action: { buttons: buttons },
-			};
-
+			const interactive = { type: "button", body: { text: body }, action: { buttons } };
 			$overlay.remove();
 			this._send_interactive("interactive_button", interactive, body);
 		});
@@ -730,23 +678,38 @@ class PolyginChat {
 		this.$widget.append($overlay);
 	}
 
+	_addReplyButton($container) {
+		const idx = $container.children().length + 1;
+		const $btn = $(`
+			<div class="button-entry">
+				<span class="btn-icon">&#x21A9;</span>
+				<input type="text" class="btn-title-input" placeholder="Button ${idx}" maxlength="${WA_LIMITS.BUTTON_TITLE}">
+				<span class="char-hint btn-char-count">0/${WA_LIMITS.BUTTON_TITLE}</span>
+				<button class="btn-delete-entry" title="Remove">&#x1F5D1;</button>
+			</div>
+		`);
+		this._wireCharCount($btn, ".btn-title-input", ".btn-char-count", WA_LIMITS.BUTTON_TITLE);
+		$btn.find(".btn-delete-entry").on("click", () => { if ($container.children().length > 1) $btn.remove(); });
+		$container.append($btn);
+	}
+
+	// ── Shared Helpers ───────────────────────────────────────
+
+	_wireCharCount($scope, inputSel, countSel, limit) {
+		$scope.find(inputSel).on("input", function () {
+			const len = this.value.length;
+			$scope.find(countSel).text(`${len}/${limit}`).toggleClass("over-limit", len >= limit);
+		});
+	}
+
 	_send_interactive(type, interactiveData, displayText) {
 		frappe.call({
 			method: "polygin.api.send_chat_message",
-			args: {
-				phone: this.phone,
-				message_type: type,
-				content: displayText,
-				interactive_data: JSON.stringify(interactiveData),
-			},
+			args: { phone: this.phone, message_type: type, content: displayText, interactive_data: JSON.stringify(interactiveData) },
 			callback: (r) => {
 				const resp = r.message || {};
-				if (resp.success) {
-					frappe.show_alert({ message: __("Interactive message sent!"), indicator: "green" });
-					setTimeout(() => this.fetch_messages(), 1000);
-				} else {
-					frappe.msgprint(resp.message || __("Failed to send"));
-				}
+				if (resp.success) { frappe.show_alert({ message: __("Message sent!"), indicator: "green" }); setTimeout(() => this.fetch_messages(), 1000); }
+				else { frappe.msgprint(resp.message || __("Failed to send")); }
 			},
 		});
 	}
@@ -754,30 +717,17 @@ class PolyginChat {
 	// ── Phone Resolution (static) ────────────────────────────
 
 	static resolve_phone(frm) {
-		const fieldPriority = {
-			Lead: ["whatsapp_no", "mobile_no", "phone"],
-			Contact: ["mobile_no", "phone"],
-			Customer: ["mobile_no"],
-			Opportunity: ["whatsapp", "phone"],
-		};
+		const fieldPriority = { Lead: ["whatsapp_no", "mobile_no", "phone"], Contact: ["mobile_no", "phone"], Customer: ["mobile_no"], Opportunity: ["whatsapp", "phone"] };
 		const fields = fieldPriority[frm.doctype] || ["mobile_no", "phone"];
-		for (const f of fields) {
-			const val = frm.doc[f];
-			if (val && val.trim()) return val.trim();
-		}
+		for (const f of fields) { const val = frm.doc[f]; if (val && val.trim()) return val.trim(); }
 		return null;
 	}
 
 	static resolve_contact_name(frm) {
-		if (frm.doctype === "Lead") {
-			return frm.doc.lead_name || frm.doc.first_name || frm.doc.company_name || "";
-		} else if (frm.doctype === "Contact") {
-			return frm.doc.first_name ? `${frm.doc.first_name} ${frm.doc.last_name || ""}`.trim() : "";
-		} else if (frm.doctype === "Customer") {
-			return frm.doc.customer_name || frm.doc.name || "";
-		} else if (frm.doctype === "Opportunity") {
-			return frm.doc.customer_name || frm.doc.party_name || "";
-		}
+		if (frm.doctype === "Lead") return frm.doc.lead_name || frm.doc.first_name || frm.doc.company_name || "";
+		if (frm.doctype === "Contact") return frm.doc.first_name ? `${frm.doc.first_name} ${frm.doc.last_name || ""}`.trim() : "";
+		if (frm.doctype === "Customer") return frm.doc.customer_name || frm.doc.name || "";
+		if (frm.doctype === "Opportunity") return frm.doc.customer_name || frm.doc.party_name || "";
 		return "";
 	}
 
@@ -785,12 +735,8 @@ class PolyginChat {
 
 	_format_date(ts) {
 		try {
-			const d = new Date(ts);
-			if (isNaN(d.getTime())) return "";
-			const today = new Date();
-			const yesterday = new Date(today);
-			yesterday.setDate(yesterday.getDate() - 1);
-
+			const d = new Date(ts); if (isNaN(d.getTime())) return "";
+			const today = new Date(); const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
 			if (d.toDateString() === today.toDateString()) return "Today";
 			if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
 			return d.toLocaleDateString("en-IN", { day: "2-digit", month: "short", year: "numeric" });
@@ -798,27 +744,18 @@ class PolyginChat {
 	}
 
 	_format_time(ts) {
-		try {
-			const d = new Date(ts);
-			if (isNaN(d.getTime())) return "";
-			return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true });
-		} catch { return ""; }
+		try { const d = new Date(ts); if (isNaN(d.getTime())) return ""; return d.toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", hour12: true }); }
+		catch { return ""; }
 	}
 
 	// ── Lifecycle ─────────────────────────────────────────────
 
 	destroy() {
-		this.stop_polling();
-		this.stop_countdown();
-		this.remove_widget();
-		this.remove_bubble();
+		this.stop_polling(); this.stop_countdown(); this.remove_widget(); this.remove_bubble();
 		$(document).off("click.polygin_attach");
-		if (window._polygin_chat_instance === this) {
-			window._polygin_chat_instance = null;
-		}
+		if (window._polygin_chat_instance === this) window._polygin_chat_instance = null;
 	}
 }
 
-// Global singleton reference
 window._polygin_chat_instance = null;
 window.PolyginChat = PolyginChat;
