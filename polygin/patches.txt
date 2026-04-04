@@ -6,3 +6,4 @@
 # Patches added in this section will be executed after doctypes are migrated
 polygin.patches.ensure_polygin_desktop_icon
 polygin.patches.populate_normalized_phone
+polygin.patches.migrate_templates

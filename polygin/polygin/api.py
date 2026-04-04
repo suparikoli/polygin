@@ -40,25 +40,71 @@ def normalize_phone(phone, default_country_code):
 	return normalized if re.search(r"\d", normalized) else ""
 
 
-def build_example_array(doc, template_name):
-	"""Build ordered template variable list from Polygin Settings mapping."""
-
+def _get_template_row(template_name, doctype=None):
+	"""Find the matching Polygin Button row for a template + optional DocType."""
 	settings = frappe.get_single("Polygin Settings")
-	mappings = [
-		row
-		for row in settings.get("variable_mapping")
+	rows = [
+		row for row in settings.get("buttons")
 		if cstr(row.template_name).strip() == cstr(template_name).strip()
+		and cint(row.is_active) == 1
 	]
-	mappings = sorted(mappings, key=lambda row: cint(row.variable_index))
+	# Prefer row matching the specific DocType
+	if doctype:
+		for row in rows:
+			if cstr(row.for_doctype).strip() == cstr(doctype).strip():
+				return row
+	# Fallback: row with no doctype filter, or first match
+	for row in rows:
+		if not cstr(row.for_doctype).strip():
+			return row
+	return rows[0] if rows else None
 
+
+def _build_programmatic_vars(template_name, doc, doctype, docname):
+	"""Resolve variables programmatically for built-in templates."""
+	if template_name == "doctype":
+		contact_name = (
+			doc.get("contact_person") or doc.get("customer_name")
+			or doc.get("supplier_name") or doc.get("lead_name")
+			or doc.get("first_name") or ""
+		)
+		doctype_label = (doctype or "").replace("_", " ")
+		site_url = frappe.utils.get_url()
+		pdf_url = (
+			f"{site_url}/api/method/frappe.utils.print_format.download_pdf"
+			f"?doctype={doctype}&name={docname}&format=Standard&no_letterhead=0"
+			f"&key={frappe.generate_hash(length=20)}"
+		)
+		return [contact_name, doctype_label, docname, pdf_url]
+	return []
+
+
+def build_example_array(doc, template_name, doctype=None, docname=None):
+	"""Build ordered template variable list from the FB Approved Templates table."""
+	row = _get_template_row(template_name, doctype)
+	if not row:
+		return []
+
+	if cint(row.is_programmatic):
+		return _build_programmatic_vars(template_name, doc, doctype or doc.doctype, docname or doc.name)
+
+	# Field-based mapping: read var_1 through var_9
 	example_arr = []
-	for mapping in mappings:
-		mapped_value = doc.get(mapping.field_name)
-		if mapped_value in (None, ""):
-			mapped_value = mapping.default_value or ""
-		example_arr.append(cstr(mapped_value))
-
+	for i in range(1, 10):
+		field_name = cstr(row.get(f"var_{i}")).strip()
+		if not field_name:
+			continue
+		val = doc.get(field_name)
+		example_arr.append(cstr(val) if val not in (None, "") else "")
 	return example_arr
+
+
+def _build_message_text(row, example_arr):
+	"""Build conversational message text by substituting {{1}}–{{9}} in the template message."""
+	msg = cstr(row.message or "")
+	for i, val in enumerate(example_arr, start=1):
+		msg = msg.replace(f"{{{{{i}}}}}", cstr(val))
+	return msg
 
 
 def handle_api_response(response):
@@ -129,31 +175,36 @@ def _parse_request_exception(exc):
 
 
 @frappe.whitelist()
-def get_buttons():
+def get_buttons(doctype=None):
 	"""Return active Polygin template buttons configured in settings."""
 
 	settings = frappe.get_single("Polygin Settings")
-	return [
-		{
+	results = []
+	for row in settings.get("buttons"):
+		if cint(row.is_active) != 1:
+			continue
+		# Filter by doctype if provided
+		if doctype and cstr(row.for_doctype).strip() and cstr(row.for_doctype).strip() != cstr(doctype).strip():
+			continue
+		results.append({
 			"button_name": row.button_name,
 			"template_name": row.template_name,
-		}
-		for row in settings.get("buttons")
-		if cint(row.is_active) == 1
-	]
+			"for_doctype": row.for_doctype,
+			"message": row.message,
+			"is_programmatic": cint(row.is_programmatic),
+		})
+	return results
 
 
 @frappe.whitelist()
-def send_whatsapp_template(doctype, docname, template_name, target_field):
-	"""Send a WhatsApp template message using Polyg.in."""
+def send_whatsapp_template(doctype, docname, template_name, phone=None, target_field=None):
+	"""Send a WhatsApp template — conversational if 24h window open, else via Template API."""
 
 	try:
 		if not cstr(doctype).strip() or not cstr(docname).strip():
 			return {"success": False, "message": "Document type and document name are required."}
 		if not cstr(template_name).strip():
 			return {"success": False, "message": "Template name is required."}
-		if not cstr(target_field).strip():
-			return {"success": False, "message": "Target field is required."}
 
 		doc = frappe.get_doc(doctype, docname)
 		settings = frappe.get_single("Polygin Settings")
@@ -165,76 +216,60 @@ def send_whatsapp_template(doctype, docname, template_name, target_field):
 		if not api_key:
 			return {"success": False, "message": "Polygin API key is not configured in Polygin Settings."}
 
-		raw_phone_number = doc.get(target_field)
-		if not raw_phone_number:
-			return {
-				"success": False,
-				"message": f"Phone number not found in field '{target_field}' for {doctype} {docname}.",
-			}
+		# Resolve phone number
+		raw_phone = phone or (doc.get(target_field) if target_field else None)
+		if not raw_phone:
+			return {"success": False, "message": "Phone number not provided."}
 
-		normalized_phone = normalize_phone(raw_phone_number, default_country_code)
+		normalized_phone = normalize_phone(raw_phone, default_country_code)
 		if not normalized_phone:
-			return {
-				"success": False,
-				"message": f"Invalid phone number in field '{target_field}' for {doctype} {docname}.",
+			return {"success": False, "message": "Invalid phone number."}
+
+		# Build variables
+		example_arr = build_example_array(doc, template_name, doctype, docname)
+		template_row = _get_template_row(template_name, doctype)
+
+		# Check 24h response window
+		normalized_match = normalize_phone_for_matching(raw_phone)
+		window_active = _is_window_active(normalized_match)
+
+		if window_active and template_row and cstr(template_row.message).strip():
+			# Send as conversational text
+			message_text = _build_message_text(template_row, example_arr)
+			result = send_chat_message(phone=raw_phone, message_type="text", content=message_text)
+			if result.get("success"):
+				result["message"] = "Sent as conversation message (24h window active)."
+			return result
+		else:
+			# Send via Template API
+			url = f"{base_url.rstrip('/')}{POLYGIN_TEMPLATE_ENDPOINT}"
+			headers = {"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"}
+			payload = {
+				"sendTo": normalized_phone,
+				"templetName": template_name,
+				"exampleArr": example_arr,
+				"token": api_key,
 			}
-		example_arr = build_example_array(doc, template_name)
+			response = requests.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
+			result = handle_api_response(response)
 
-		url = f"{base_url.rstrip('/')}{POLYGIN_TEMPLATE_ENDPOINT}"
-		headers = {
-			"Authorization": f"Bearer {api_key}",
-			"Content-Type": "application/json",
-		}
-		payload = {
-			"sendTo": normalized_phone,
-			"templetName": template_name,
-			"exampleArr": example_arr,
-			"token": api_key,
-		}
-
-		response = requests.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
-
-		result = handle_api_response(response)
-		if settings.enable_logging:
-			log_message(
-				recipient=normalized_phone,
-				template_name=template_name,
-				status="Success" if result.get("success") else "Failed",
-				response_data=result.get("response") or {"message": result.get("message")},
-				reference_doctype=doctype,
-				reference_name=docname,
-			)
-		return result
+			if settings.enable_logging:
+				log_message(
+					recipient=normalized_phone, template_name=template_name,
+					status="Success" if result.get("success") else "Failed",
+					response_data=result.get("response") or {"message": result.get("message")},
+					reference_doctype=doctype, reference_name=docname,
+				)
+			return result
 
 	except requests.RequestException as exc:
 		error_message, error_response = _parse_request_exception(exc)
-		if frappe.db.get_single_value("Polygin Settings", "enable_logging"):
-			log_message(
-				recipient=locals().get("normalized_phone", ""),
-				template_name=template_name,
-				status="Failed",
-				response_data=error_response,
-				reference_doctype=doctype,
-				reference_name=docname,
-			)
-		else:
-			error_message = str(exc)
-		return {"success": False, "message": f"Failed to send WhatsApp template: {error_message}"}
+		return {"success": False, "message": f"Failed to send: {error_message}"}
 	except frappe.DoesNotExistError:
 		return {"success": False, "message": f"{doctype} {docname} was not found."}
-	except frappe.ValidationError as exc:
-		return {"success": False, "message": cstr(exc)}
 	except Exception:
-		if frappe.db.get_single_value("Polygin Settings", "enable_logging"):
-			log_message(
-				recipient=locals().get("normalized_phone", ""),
-				template_name=template_name,
-				status="Failed",
-				response_data={"message": "Unexpected error", "traceback": frappe.get_traceback()},
-				reference_doctype=doctype,
-				reference_name=docname,
-			)
-		return {"success": False, "message": "An unexpected error occurred while sending template message."}
+		frappe.log_error(frappe.get_traceback(), "Polygin: send_whatsapp_template failed")
+		return {"success": False, "message": "An unexpected error occurred."}
 
 
 # Aliases from frappe.utils for concise conversions used across this module.
@@ -247,6 +282,24 @@ cstr = frappe.utils.cstr
 # ---------------------------------------------------------------------------
 
 POLYGIN_CONVERSATIONAL_ENDPOINT = "/api/v1/send-message"
+
+
+def _is_window_active(normalized_match):
+	"""Check if the 24h response window is active for a normalized phone."""
+	last_incoming = frappe.get_all(
+		"Polygin Wa Messages",
+		filters={"normalized_phone": normalized_match, "direction": "incoming"},
+		fields=["timestamp", "creation"],
+		order_by="creation desc",
+		limit_page_length=1,
+	)
+	if not last_incoming:
+		return False
+	last_ts = _parse_timestamp(last_incoming[0].timestamp) or last_incoming[0].creation
+	if not last_ts:
+		return False
+	remaining = (last_ts + frappe.utils.datetime.timedelta(hours=24) - frappe.utils.now_datetime()).total_seconds()
+	return remaining > 0
 
 
 def normalize_phone_for_matching(phone):
@@ -507,107 +560,5 @@ def get_quick_replies():
 
 @frappe.whitelist()
 def send_document_via_template(doctype, docname, phone):
-	"""Send a document PDF to a contact — via conversation if window is open, else via template."""
-	import json as _json
-
-	doc = frappe.get_doc(doctype, docname)
-	settings = frappe.get_single("Polygin Settings")
-	api_key = settings.get_password("api_key")
-	base_url = cstr(settings.base_url).strip() or "https://polyg.in"
-	default_country_code = cstr(settings.default_country_code).strip() or "+91"
-
-	if not api_key:
-		return {"success": False, "message": "Polygin API key is not configured."}
-
-	normalized_for_api = normalize_phone(phone, default_country_code)
-	if not normalized_for_api:
-		return {"success": False, "message": "Invalid phone number."}
-
-	# Resolve contact name
-	contact_name = (
-		doc.get("contact_person")
-		or doc.get("customer_name")
-		or doc.get("supplier_name")
-		or doc.get("name")
-		or ""
-	)
-
-	# Generate public PDF URL using Frappe's print format API with a guest key
-	site_url = frappe.utils.get_url()
-	# Use the print view URL which works for portal users / public access
-	pdf_url = f"{site_url}/api/method/frappe.utils.print_format.download_pdf?doctype={doctype}&name={docname}&format=Standard&no_letterhead=0"
-
-	# Make the document accessible: create a temporary access key
-	doc_key = frappe.generate_hash(length=20)
-	pdf_url += f"&key={doc_key}"
-
-	# Build the message text (same as the template body)
-	doctype_label = doctype.replace("_", " ")
-	message_text = (
-		f"Hi {contact_name},\n\n"
-		f"Good news! Your requested {doctype_label} document, *{docname}*, is now available.\n\n"
-		f"You can download it here:\n{pdf_url}\n\n"
-		f"Let me know if you need any assistance."
-	)
-
-	# Check response window
-	normalized_match = normalize_phone_for_matching(phone)
-	last_incoming = frappe.get_all(
-		"Polygin Wa Messages",
-		filters={"normalized_phone": normalized_match, "direction": "incoming"},
-		fields=["timestamp", "creation"],
-		order_by="creation desc",
-		limit_page_length=1,
-	)
-	window_active = False
-	if last_incoming:
-		last_ts = _parse_timestamp(last_incoming[0].timestamp) or last_incoming[0].creation
-		if last_ts:
-			remaining = (last_ts + frappe.utils.datetime.timedelta(hours=24) - frappe.utils.now_datetime()).total_seconds()
-			window_active = remaining > 0
-
-	if window_active:
-		# Send as conversational message
-		result = send_chat_message(
-			phone=phone,
-			message_type="text",
-			content=message_text,
-		)
-		if result.get("success"):
-			result["message"] = "Document sent as a conversation message."
-		return result
-	else:
-		# Send via doctype template
-		example_arr = [contact_name, doctype_label, docname, pdf_url]
-		url = f"{base_url.rstrip('/')}{POLYGIN_TEMPLATE_ENDPOINT}"
-		headers = {
-			"Authorization": f"Bearer {api_key}",
-			"Content-Type": "application/json",
-		}
-		payload = {
-			"sendTo": normalized_for_api,
-			"templetName": "doctype",
-			"exampleArr": example_arr,
-			"token": api_key,
-		}
-
-		try:
-			response = requests.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
-			result = handle_api_response(response)
-		except requests.RequestException as exc:
-			error_message, _ = _parse_request_exception(exc)
-			return {"success": False, "message": f"Failed to send document: {error_message}"}
-
-		if settings.enable_logging:
-			log_message(
-				recipient=normalized_for_api,
-				template_name="doctype",
-				status="Success" if result.get("success") else "Failed",
-				response_data=result.get("response") or {"message": result.get("message")},
-				reference_doctype=doctype,
-				reference_name=docname,
-			)
-
-		if result.get("success"):
-			result["message"] = "Document sent via WhatsApp template."
-		return result
+	"""Send a document PDF — delegates to the unified send_whatsapp_template with template_name='doctype'."""
+	return send_whatsapp_template(doctype=doctype, docname=docname, template_name="doctype", phone=phone)

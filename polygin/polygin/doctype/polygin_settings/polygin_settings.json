@@ -9,8 +9,7 @@
   "enable_logging",
   "enable_chat_widget",
   "default_country_code",
-  "buttons",
-  "variable_mapping"
+  "buttons"
  ],
  "fields": [
   {
@@ -46,20 +45,14 @@
   {
    "fieldname": "buttons",
    "fieldtype": "Table",
-   "label": "Buttons",
+   "label": "FB Approved Templates",
    "options": "Polygin Button"
-  },
-  {
-   "fieldname": "variable_mapping",
-   "fieldtype": "Table",
-   "label": "Variable Mapping",
-   "options": "Polygin Variable Mapping"
   }
  ],
  "grid_page_length": 50,
  "issingle": 1,
  "links": [],
- "modified": "2026-03-18 00:00:00.000000",
+ "modified": "2026-04-04 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Polygin",
  "name": "Polygin Settings",

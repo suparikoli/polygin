@@ -7,14 +7,26 @@
  "field_order": [
   "button_name",
   "template_name",
-  "is_active"
+  "for_doctype",
+  "is_active",
+  "is_programmatic",
+  "message",
+  "var_1",
+  "var_2",
+  "var_3",
+  "var_4",
+  "var_5",
+  "var_6",
+  "var_7",
+  "var_8",
+  "var_9"
  ],
  "fields": [
   {
    "fieldname": "button_name",
    "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Button Name",
+   "label": "Label",
    "reqd": 1
   },
   {
@@ -25,16 +37,90 @@
    "reqd": 1
   },
   {
+   "fieldname": "for_doctype",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "For DocType",
+   "options": "DocType"
+  },
+  {
    "default": "1",
    "fieldname": "is_active",
    "fieldtype": "Check",
    "in_list_view": 1,
-   "label": "Is Active"
+   "label": "Active"
+  },
+  {
+   "default": "0",
+   "fieldname": "is_programmatic",
+   "fieldtype": "Check",
+   "label": "Programmatically Defined",
+   "description": "Variables resolved by code (e.g. doctype template). var_1–var_9 are ignored."
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "label": "Message",
+   "description": "Message body with {{1}}, {{2}} etc. Used for conversational sends when 24h window is open."
+  },
+  {
+   "fieldname": "var_1",
+   "fieldtype": "Data",
+   "label": "{{1}}",
+   "depends_on": "eval:!doc.is_programmatic"
+  },
+  {
+   "fieldname": "var_2",
+   "fieldtype": "Data",
+   "label": "{{2}}",
+   "depends_on": "eval:!doc.is_programmatic"
+  },
+  {
+   "fieldname": "var_3",
+   "fieldtype": "Data",
+   "label": "{{3}}",
+   "depends_on": "eval:!doc.is_programmatic"
+  },
+  {
+   "fieldname": "var_4",
+   "fieldtype": "Data",
+   "label": "{{4}}",
+   "depends_on": "eval:!doc.is_programmatic"
+  },
+  {
+   "fieldname": "var_5",
+   "fieldtype": "Data",
+   "label": "{{5}}",
+   "depends_on": "eval:!doc.is_programmatic"
+  },
+  {
+   "fieldname": "var_6",
+   "fieldtype": "Data",
+   "label": "{{6}}",
+   "depends_on": "eval:!doc.is_programmatic"
+  },
+  {
+   "fieldname": "var_7",
+   "fieldtype": "Data",
+   "label": "{{7}}",
+   "depends_on": "eval:!doc.is_programmatic"
+  },
+  {
+   "fieldname": "var_8",
+   "fieldtype": "Data",
+   "label": "{{8}}",
+   "depends_on": "eval:!doc.is_programmatic"
+  },
+  {
+   "fieldname": "var_9",
+   "fieldtype": "Data",
+   "label": "{{9}}",
+   "depends_on": "eval:!doc.is_programmatic"
   }
  ],
  "istable": 1,
  "links": [],
- "modified": "2026-03-18 00:00:00.000000",
+ "modified": "2026-04-04 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Polygin",
  "name": "Polygin Button",

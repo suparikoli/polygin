@@ -390,6 +390,7 @@ class PolyginChat {
 		if (this.templateButtons !== null) { this._render_expired_input($container, this.templateButtons); return; }
 		frappe.call({
 			method: "polygin.api.get_buttons",
+			args: { doctype: this.doctype },
 			callback: (r) => { this.templateButtons = r.message || []; this._render_expired_input($container, this.templateButtons); },
 		});
 	}
@@ -397,7 +398,7 @@ class PolyginChat {
 	_render_expired_input($container, buttons) {
 		let btnHtml = buttons.length > 0
 			? buttons.map((b) => `<button class="polygin-chat-template-btn" data-template="${frappe.utils.escape_html(b.template_name)}">${frappe.utils.escape_html(b.button_name)}</button>`).join("")
-			: `<span style="color:#856404;font-size:13px;">No templates configured.</span>`;
+			: `<span style="color:#856404;font-size:13px;">No templates configured for this DocType.</span>`;
 		$container.html(`<div class="polygin-chat-expired-bar"><p>24-hour response window expired. Send a template to re-engage.</p><div class="polygin-chat-template-btns">${btnHtml}</div></div>`);
 		$container.find(".polygin-chat-template-btn").on("click", (e) => {
 			const tn = $(e.target).data("template"); if (!tn) return; this._send_template(tn);
@@ -405,31 +406,14 @@ class PolyginChat {
 	}
 
 	_send_template(templateName) {
-		// Warn if 24h window is open — use conversational messaging instead
-		if (this.responseWindow.is_active) {
-			frappe.confirm(
-				__("The 24-hour response window is still open. You can send regular messages instead of using a template. Send template anyway?"),
-				() => this._do_send_template(templateName),
-			);
-			return;
-		}
-		this._do_send_template(templateName);
-	}
-
-	_do_send_template(templateName) {
-		const fieldMap = {
-			Lead: ["whatsapp_no", "mobile_no", "phone"], Contact: ["mobile_no", "phone"],
-			Customer: ["mobile_no"], Opportunity: ["whatsapp", "phone"],
-		};
-		const targetField = TRANSACTIONAL_DOCTYPES.has(this.doctype) ? "contact_mobile" : (fieldMap[this.doctype] || ["mobile_no"])[0];
 		frappe.call({
 			method: "polygin.api.send_whatsapp_template",
-			args: { doctype: this.doctype, docname: this.docname, template_name: templateName, target_field: targetField },
-			freeze: true, freeze_message: __("Sending template..."),
+			args: { doctype: this.doctype, docname: this.docname, template_name: templateName, phone: this.phone },
+			freeze: true, freeze_message: __("Sending..."),
 			callback: (r) => {
 				const resp = r.message || {};
-				if (resp.success) { frappe.show_alert({ message: __("Template sent!"), indicator: "green" }); setTimeout(() => this.fetch_messages(), 1500); }
-				else { frappe.msgprint(resp.message || __("Failed to send template.")); }
+				if (resp.success) { frappe.show_alert({ message: resp.message || __("Sent!"), indicator: "green" }); setTimeout(() => this.fetch_messages(), 1500); }
+				else { frappe.msgprint(resp.message || __("Failed to send.")); }
 			},
 		});
 	}
