@@ -8,6 +8,7 @@
 const TRANSACTIONAL_DOCTYPES = new Set([
 	"Sales Invoice", "Sales Order", "Quotation",
 	"Delivery Note", "Purchase Order", "Purchase Invoice",
+	"Purchase Receipt",
 ]);
 
 // WhatsApp character limits

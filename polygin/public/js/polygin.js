@@ -174,6 +174,7 @@ frappe.ui.form.on("Opportunity", {
 const _polygin_transaction_doctypes = [
 	"Sales Invoice", "Sales Order", "Quotation",
 	"Delivery Note", "Purchase Order", "Purchase Invoice",
+	"Purchase Receipt",
 ];
 _polygin_transaction_doctypes.forEach((dt) => {
 	frappe.ui.form.on(dt, {

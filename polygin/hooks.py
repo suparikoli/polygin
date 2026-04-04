@@ -24,8 +24,8 @@ add_to_apps_screen = [
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/polygin/css/polygin_chat.css?v=13"
-app_include_js = "/assets/polygin/js/polygin_chat.js?v=13"
+app_include_css = "/assets/polygin/css/polygin_chat.css?v=14"
+app_include_js = "/assets/polygin/js/polygin_chat.js?v=14"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/polygin/css/polygin.css"
@@ -54,6 +54,7 @@ doctype_js = {
 	"Delivery Note": "public/js/polygin.js",
 	"Purchase Order": "public/js/polygin.js",
 	"Purchase Invoice": "public/js/polygin.js",
+	"Purchase Receipt": "public/js/polygin.js",
 }
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
