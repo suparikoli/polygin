@@ -281,6 +281,45 @@ cstr = frappe.utils.cstr
 # ---------------------------------------------------------------------------
 
 POLYGIN_CONVERSATIONAL_ENDPOINT = "/api/v1/send-message"
+_DEDUP_WINDOW_SECONDS = 120
+
+
+def _deduplicate_outgoing(messages):
+	"""Remove duplicate outgoing messages caused by webhook echo-back.
+
+	When a message is sent from ERPNext via send_chat_message(), it is stored
+	locally with origin='outgoing'. The Polyg.in webhook then echoes the same
+	message back with origin='meta' and route='OUTGOING'. This function keeps
+	the webhook version (which has richer data like metaChatId) and drops the
+	local duplicate.
+	"""
+	# Group outgoing messages by (message_text, direction)
+	# and check for origin=outgoing + origin=meta pairs within the time window.
+	local_msgs = {}  # message_text -> list of indices
+	for i, m in enumerate(messages):
+		if m["direction"] == "outgoing" and m.get("origin") == "outgoing":
+			local_msgs.setdefault(m["message"], []).append(i)
+
+	drop_indices = set()
+	for i, m in enumerate(messages):
+		if m["direction"] != "outgoing" or m.get("origin") != "meta":
+			continue
+		# Check if there's a matching local message with the same text
+		candidates = local_msgs.get(m["message"])
+		if not candidates:
+			continue
+		for li in candidates:
+			local_ts = _parse_timestamp(messages[li]["timestamp"])
+			meta_ts = _parse_timestamp(m["timestamp"])
+			if local_ts and meta_ts:
+				diff = abs((meta_ts - local_ts).total_seconds())
+				if diff <= _DEDUP_WINDOW_SECONDS:
+					drop_indices.add(li)  # drop the local version
+					break
+
+	if drop_indices:
+		messages = [m for i, m in enumerate(messages) if i not in drop_indices]
+	return messages
 
 
 def _is_window_active(normalized_match):
@@ -396,6 +435,11 @@ def get_chat_messages(phone, channel="whatsapp", page=1, page_size=50):
 	# Sort all by timestamp ascending
 	messages.sort(key=lambda m: m["timestamp"])
 
+	# Deduplicate: when send_chat_message() stores a message locally (origin=outgoing)
+	# AND the Polyg.in webhook echoes the same message back (origin=meta), both appear.
+	# Keep the webhook version (richer data) and drop the local duplicate.
+	messages = _deduplicate_outgoing(messages)
+
 	# Compute response window from the last incoming message
 	response_window = {"is_active": False, "seconds_remaining": 0, "expires_at": None}
 	incoming_msgs = [m for m in messages if m["direction"] == "incoming"]
@@ -465,13 +509,13 @@ def send_chat_message(phone, message_type, content=None, media_url=None, caption
 	else:
 		return {"success": False, "message": f"Unsupported message type: {message_type}"}
 
-	# Send via Polygin API
-	url = f"{base_url.rstrip('/')}{POLYGIN_CONVERSATIONAL_ENDPOINT}"
+	# Send via Polygin API — conversational endpoint requires token as query param
+	url = f"{base_url.rstrip('/')}{POLYGIN_CONVERSATIONAL_ENDPOINT}?token={api_key}"
 	try:
 		response = requests.post(
 			url,
 			json={"messageObject": msg_obj},
-			headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
+			headers={"Content-Type": "application/json"},
 			timeout=REQUEST_TIMEOUT,
 		)
 		result = handle_api_response(response)

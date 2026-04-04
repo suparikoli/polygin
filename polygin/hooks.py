@@ -14,8 +14,8 @@ add_to_apps_screen = [
 	}
 ]
 
-app_include_css = "/assets/polygin/css/polygin_chat.css?v=18"
-app_include_js = "/assets/polygin/js/polygin_chat.js?v=20"
+app_include_css = "/assets/polygin/css/polygin_chat.css?v=19"
+app_include_js = "/assets/polygin/js/polygin_chat.js?v=21"
 
 doctype_js = {
 	"Lead": "public/js/polygin.js",

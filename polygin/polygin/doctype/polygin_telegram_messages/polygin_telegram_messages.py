@@ -11,8 +11,8 @@ class PolyginTelegramMessages(Document):
 	def before_insert(self):
 		if self.sender_mobile and not self.normalized_phone:
 			self.normalized_phone = normalize_phone_for_matching(self.sender_mobile)
-		if not self.direction:
-			self.direction = self._detect_direction()
+		# Always derive direction from raw_data.route — authoritative source.
+		self.direction = self._detect_direction()
 
 	def _detect_direction(self):
 		"""Detect message direction from raw webhook data."""

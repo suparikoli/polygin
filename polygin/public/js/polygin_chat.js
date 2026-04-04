@@ -325,7 +325,7 @@ class PolyginChat {
 		if (msg.message_type === "interactive" || msg.message_type === "button") {
 			content += this._render_interactive(msg);
 		} else if (msg.message) {
-			content += `<div class="polygin-msg-text">${frappe.utils.escape_html(msg.message)}</div>`;
+			content += this._render_text_with_readmore(msg.message);
 		}
 		content += `<div class="polygin-msg-meta">${this._format_time(msg.timestamp)}</div>`;
 		return `<div class="polygin-msg ${dirClass}">${content}</div>`;
@@ -649,6 +649,27 @@ class PolyginChat {
 
 	_close_quick_replies() { $(".polygin-qr-menu").remove(); }
 
+	// ── Text Rendering with Read More ────────────────────────
+
+	_render_text_with_readmore(text, maxLen = 215) {
+		if (text.length <= maxLen) {
+			return `<div class="polygin-msg-text">${this._wa_format(text)}</div>`;
+		}
+		// Truncate on a word boundary to avoid cutting mid-word
+		let cutoff = text.lastIndexOf(" ", maxLen);
+		if (cutoff < maxLen * 0.6) cutoff = maxLen; // fallback if no space found
+		const truncText = text.substring(0, cutoff);
+		const uid = `rm_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
+		return `<div class="polygin-msg-text"><span id="${uid}_s">${this._wa_format(truncText)}... <a href="#" class="polygin-readmore-link" onclick="document.getElementById('${uid}_s').style.display='none';document.getElementById('${uid}_f').style.display='inline';return false;">Read more</a></span><span id="${uid}_f" style="display:none">${this._wa_format(text)} <a href="#" class="polygin-readmore-link" onclick="document.getElementById('${uid}_f').style.display='none';document.getElementById('${uid}_s').style.display='inline';return false;">Show less</a></span></div>`;
+	}
+
+	_wa_format(text) {
+		// Escape HTML first, then render WhatsApp-style formatting
+		return frappe.utils.escape_html(text || "")
+			.replace(/\*([^*]+)\*/g, "<b>$1</b>")
+			.replace(/_([^_]+)_/g, "<i>$1</i>");
+	}
+
 	// ── Interactive Message Rendering ─────────────────────────
 
 	_render_interactive(msg) {
@@ -665,7 +686,7 @@ class PolyginChat {
 		}
 
 		if (data && data.type === "list") {
-			html += `<div class="polygin-msg-text">${frappe.utils.escape_html(data.body?.text || msg.message || "")}</div>`;
+			html += this._render_text_with_readmore(data.body?.text || msg.message || "");
 			if (data.action?.sections) {
 				html += `<div class="polygin-msg-interactive">`;
 				for (const section of data.action.sections) {
@@ -679,7 +700,7 @@ class PolyginChat {
 				html += `</div>`;
 			}
 		} else if (data && data.type === "button") {
-			html += `<div class="polygin-msg-text">${frappe.utils.escape_html(data.body?.text || msg.message || "")}</div>`;
+			html += this._render_text_with_readmore(data.body?.text || msg.message || "");
 			if (data.action?.buttons) {
 				html += `<div class="polygin-msg-buttons">`;
 				for (const btn of data.action.buttons) {
