@@ -772,6 +772,22 @@
 .composer-actions .btn-send:hover { background: #1eba57; }
 .composer-actions .btn-cancel { background: #2a3a4a; color: #e0e0e0; }
 .composer-actions .btn-cancel:hover { background: #3a4a5a; }
+.composer-save-qr {
+	display: flex;
+	align-items: center;
+	gap: 8px;
+	padding: 10px 16px;
+	font-size: 13px;
+	color: #fbbf24;
+	cursor: pointer;
+	border-top: 1px solid #2a3a4a;
+	margin-top: 8px;
+}
+.composer-save-qr input[type="checkbox"] {
+	accent-color: #25D366;
+	width: 16px;
+	height: 16px;
+}
 .composer-add-section,
 .composer-add-button {
 	display: block;

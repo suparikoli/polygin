@@ -540,6 +540,31 @@ class PolyginChat {
 		}, __("Save Quick Reply"), __("Save"));
 	}
 
+	_save_interactive_qr(msgType, bodyText, payload) {
+		frappe.prompt([
+			{ fieldname: "title", label: "Title", fieldtype: "Data", reqd: 1 },
+			{ fieldname: "shortcode", label: "Shortcode (optional)", fieldtype: "Data" },
+		], (values) => {
+			frappe.call({
+				method: "frappe.client.insert",
+				args: {
+					doc: {
+						doctype: "Polygin Quick Reply",
+						title: values.title,
+						message: bodyText,
+						message_type: msgType,
+						interactive_payload: JSON.stringify(payload),
+						shortcode: values.shortcode || "",
+						is_active: 1,
+					},
+				},
+				callback: () => {
+					frappe.show_alert({ message: __("Quick reply saved!"), indicator: "green" });
+				},
+			});
+		}, __("Save as Quick Reply"), __("Save"));
+	}
+
 	_close_quick_replies() { $(".polygin-qr-menu").remove(); }
 
 	// ── Interactive Message Rendering ─────────────────────────
@@ -666,6 +691,7 @@ class PolyginChat {
 						<div class="composer-sections"></div>
 						<button class="composer-add-section">+ Add Section</button>
 					</div>
+					<label class="composer-save-qr"><input type="checkbox" class="save-qr-check"> &#x26A1; Save as Quick Reply</label>
 					<div class="composer-footer-info">Fill in the required fields to send.</div>
 					<div class="composer-actions">
 						<button class="btn-cancel">Cancel</button>
@@ -719,8 +745,10 @@ class PolyginChat {
 				footer: { text: $overlay.find(".lc-footer").val().trim() },
 				action: { button: $overlay.find(".lc-button").val().trim() || "View Options", sections },
 			};
+			const saveQR = $overlay.find(".save-qr-check").is(":checked");
 			$overlay.remove();
 			this._send_interactive("interactive_list", interactive, body);
+			if (saveQR) this._save_interactive_qr("list", body, interactive);
 		});
 
 		this.$widget.append($overlay);
@@ -802,6 +830,7 @@ class PolyginChat {
 						<div class="button-list"></div>
 						<button class="composer-add-button">+ Add Button</button>
 					</div>
+					<label class="composer-save-qr"><input type="checkbox" class="save-qr-check"> &#x26A1; Save as Quick Reply</label>
 					<div class="composer-footer-info">Fill in the required fields to send.</div>
 					<div class="composer-actions">
 						<button class="btn-cancel">Cancel</button>
@@ -835,8 +864,10 @@ class PolyginChat {
 			if (buttons.length === 0) { frappe.msgprint(__("Add at least one button")); return; }
 
 			const interactive = { type: "button", body: { text: body }, action: { buttons } };
+			const saveQR = $overlay.find(".save-qr-check").is(":checked");
 			$overlay.remove();
 			this._send_interactive("interactive_button", interactive, body);
+			if (saveQR) this._save_interactive_qr("button", body, interactive);
 		});
 
 		this.$widget.append($overlay);
