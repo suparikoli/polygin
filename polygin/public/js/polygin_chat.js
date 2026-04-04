@@ -137,18 +137,7 @@ class PolyginChat {
 			this.isFullscreen ? this.collapse_to_widget() : this.expand_to_fullscreen();
 		});
 		this.$widget.find(".polygin-chat-send-btn").on("click", () => this.send_text_message());
-		this.$widget.find("textarea").on("keydown", (e) => {
-			if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); this.send_text_message(); }
-		});
-		this.$widget.find("textarea").on("input", function () {
-			this.style.height = "auto";
-			this.style.height = Math.min(this.scrollHeight, 100) + "px";
-			const $counter = $(this).siblings(".polygin-char-count");
-			const len = this.value.length;
-			$counter.text(`${len}/${WA_LIMITS.TEXT_BODY}`);
-			$counter.toggle(len > 0);
-			$counter.toggleClass("over-limit", len > WA_LIMITS.TEXT_BODY);
-		});
+		this._bindTextarea(this.$widget.find("textarea"));
 		this.$widget.find(".polygin-chat-attach-btn").on("click", (e) => {
 			e.stopPropagation();
 			this.toggle_attach_menu();
@@ -158,6 +147,60 @@ class PolyginChat {
 			this.show_quick_replies();
 		});
 		$(document).off("click.polygin_attach").on("click.polygin_attach", () => { this.close_attach_menu(); this._close_quick_replies(); });
+	}
+
+	_bindTextarea($ta) {
+		$ta.on("keydown", (e) => {
+			if (e.key === "Enter" && !e.shiftKey) {
+				e.preventDefault();
+				const val = $ta.val().trim();
+				// Check for shortcode before sending
+				if (val.startsWith("/") && !val.includes(" ")) {
+					this._expandShortcode($ta, val.substring(1));
+				} else {
+					this.send_text_message();
+				}
+			}
+		});
+		$ta.on("input", function () {
+			this.style.height = "auto";
+			this.style.height = Math.min(this.scrollHeight, 100) + "px";
+			const $counter = $(this).siblings(".polygin-char-count");
+			const len = this.value.length;
+			$counter.text(`${len}/${WA_LIMITS.TEXT_BODY}`);
+			$counter.toggle(len > 0);
+			$counter.toggleClass("over-limit", len > WA_LIMITS.TEXT_BODY);
+		});
+	}
+
+	_expandShortcode($ta, code) {
+		frappe.call({
+			method: "polygin.api.get_quick_replies",
+			callback: (r) => {
+				const replies = r.message || [];
+				const match = replies.find((qr) => qr.shortcode && qr.shortcode.toLowerCase() === code.toLowerCase());
+				if (!match) {
+					// No match — send as regular text
+					this.send_text_message();
+					return;
+				}
+				if (match.message_type === "text" || !match.message_type) {
+					$ta.val(match.message).trigger("input").focus();
+					frappe.show_alert({ message: __(`Shortcode /${code} expanded`), indicator: "blue" });
+				} else {
+					// Interactive quick reply — send directly
+					let payload = null;
+					try { payload = match.interactive_payload ? JSON.parse(match.interactive_payload) : null; } catch { payload = null; }
+					if (payload) {
+						$ta.val("").trigger("input");
+						const type = match.message_type === "button" ? "interactive_button" : "interactive_list";
+						this._send_interactive(type, payload, match.message);
+					} else {
+						$ta.val(match.message).trigger("input").focus();
+					}
+				}
+			},
+		});
 	}
 
 	// ── Message Fetching ─────────────────────────────────────
@@ -323,18 +366,7 @@ class PolyginChat {
 				</div>
 			`);
 			this.$widget.find(".polygin-chat-send-btn").on("click", () => this.send_text_message());
-			this.$widget.find("textarea").on("keydown", (e) => {
-				if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); this.send_text_message(); }
-			});
-			this.$widget.find("textarea").on("input", function () {
-				this.style.height = "auto";
-				this.style.height = Math.min(this.scrollHeight, 100) + "px";
-				const $counter = $(this).siblings(".polygin-char-count");
-				const len = this.value.length;
-				$counter.text(`${len}/${WA_LIMITS.TEXT_BODY}`);
-				$counter.toggle(len > 0);
-				$counter.toggleClass("over-limit", len > WA_LIMITS.TEXT_BODY);
-			});
+			this._bindTextarea(this.$widget.find("textarea"));
 			this.$widget.find(".polygin-chat-attach-btn").on("click", (e) => { e.stopPropagation(); this.toggle_attach_menu(); });
 			this.$widget.find(".polygin-chat-qr-btn").on("click", (e) => { e.stopPropagation(); this.show_quick_replies(); });
 		} else {
