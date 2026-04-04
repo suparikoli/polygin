@@ -22,8 +22,9 @@ def execute():
 			frappe.db.set_value(doctype, record.name, "normalized_phone", normalized, update_modified=False)
 
 		# Set direction to incoming for all records that don't have it set
+		table = f"tab{doctype}"
 		frappe.db.sql(
-			f"UPDATE `tab{doctype}` SET direction = 'incoming' WHERE direction IS NULL OR direction = ''"
+			"UPDATE `{table}` SET direction = 'incoming' WHERE direction IS NULL OR direction = ''".format(table=table.replace("`", ""))
 		)
 
 	frappe.db.commit()

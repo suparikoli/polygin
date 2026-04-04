@@ -149,8 +149,8 @@ class PolyginChat {
 			e.stopPropagation();
 			this.toggle_attach_menu();
 		});
-		// Close attach menu on outside click
-		$(document).on("click.polygin_attach", () => this.close_attach_menu());
+		// Close attach menu on outside click (only bind once)
+		$(document).off("click.polygin_attach").on("click.polygin_attach", () => this.close_attach_menu());
 	}
 
 	// ── Message Fetching ─────────────────────────────────────
@@ -310,6 +310,7 @@ class PolyginChat {
 		if (!$rw || !$rw.length) return;
 
 		const update = () => {
+			remaining = Math.max(0, remaining);
 			if (remaining <= 0) {
 				this.responseWindow.is_active = false;
 				this.render_response_window();
@@ -399,6 +400,7 @@ class PolyginChat {
 
 		$container.find(".polygin-chat-template-btn").on("click", (e) => {
 			const templateName = $(e.target).data("template");
+			if (!templateName) return;
 			this._send_template(templateName);
 		});
 	}
@@ -621,8 +623,10 @@ class PolyginChat {
 				});
 			},
 			error: () => {
+				frappe.show_alert({ message: __("File upload failed"), indicator: "red" });
+			},
+			complete: () => {
 				if (this.$widget) this.$widget.find(".polygin-chat-uploading").remove();
-				frappe.msgprint(__("File upload failed"));
 			},
 		});
 	}

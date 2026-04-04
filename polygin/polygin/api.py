@@ -26,6 +26,9 @@ def normalize_phone(phone, default_country_code):
 	country_code = cstr(default_country_code).strip() or "+91"
 	if not country_code.startswith("+"):
 		country_code = f"+{country_code}"
+	# Validate country code is numeric (after +)
+	if not re.match(r"^\+\d{1,4}$", country_code):
+		country_code = "+91"
 	country_digits = country_code[1:]
 
 	# If number already includes country code (without +), only prepend "+".
@@ -316,7 +319,7 @@ def get_chat_messages(phone, channel="whatsapp", page=1, page_size=50):
 			filters={"status": "Success"},
 			fields=["name", "recipient", "template", "response", "timestamp", "creation"],
 			order_by="creation desc",
-			limit_page_length=200,
+			limit_page_length=50,
 		)
 		for log in log_records:
 			log_normalized = normalize_phone_for_matching(log.recipient)
@@ -366,6 +369,12 @@ def send_chat_message(phone, message_type, content=None, media_url=None, caption
 
 	if not api_key:
 		return {"success": False, "message": "Polygin API key is not configured."}
+
+	# Input validation
+	if message_type == "text" and len(cstr(content)) > 4096:
+		return {"success": False, "message": "Message too long. Max 4096 characters."}
+	if caption and len(cstr(caption)) > 1024:
+		return {"success": False, "message": "Caption too long. Max 1024 characters."}
 
 	normalized_for_api = normalize_phone(phone, default_country_code)
 	if not normalized_for_api:

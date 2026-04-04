@@ -421,7 +421,7 @@
 	border-radius: 8px;
 	box-shadow: 0 4px 16px rgba(0,0,0,0.15);
 	padding: 4px 0;
-	z-index: 10;
+	z-index: 1062;
 	min-width: 160px;
 }
 .polygin-chat-attach-item {
@@ -491,7 +491,7 @@
 	position: absolute;
 	inset: 0;
 	background: rgba(0,0,0,0.4);
-	z-index: 20;
+	z-index: 1070;
 	display: flex;
 	align-items: center;
 	justify-content: center;
@@ -547,11 +547,33 @@
 }
 
 /* ── Responsive ────────────────────────────────────────────── */
+.polygin-chat-send-btn:disabled::after {
+	content: "";
+	display: inline-block;
+	width: 14px;
+	height: 14px;
+	border: 2px solid rgba(255,255,255,0.4);
+	border-top-color: #fff;
+	border-radius: 50%;
+	animation: polyginSpin 0.6s linear infinite;
+}
+@keyframes polyginSpin { to { transform: rotate(360deg); } }
+
 @media (max-width: 480px) {
 	.polygin-chat-widget {
 		width: calc(100% - 16px);
 		right: 8px;
 		bottom: 8px;
 		height: calc(100vh - 80px);
+	}
+	.polygin-msg {
+		font-size: 13px;
+		max-width: 88%;
+	}
+	.polygin-chat-messages {
+		padding: 8px 10px;
+	}
+	.polygin-chat-header {
+		padding: 10px 12px;
 	}
 }
