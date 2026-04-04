@@ -991,6 +991,7 @@ class PolyginChat {
 			Lead: ["whatsapp_no", "mobile_no", "phone"],
 			Contact: ["mobile_no", "phone"],
 			Customer: ["mobile_no"],
+			Supplier: ["mobile_no"],
 			Opportunity: ["whatsapp", "phone"],
 		};
 		// Transactional DocTypes all use contact_mobile
@@ -1008,6 +1009,7 @@ class PolyginChat {
 		if (frm.doctype === "Lead") return frm.doc.lead_name || frm.doc.first_name || frm.doc.company_name || "";
 		if (frm.doctype === "Contact") return frm.doc.first_name ? `${frm.doc.first_name} ${frm.doc.last_name || ""}`.trim() : "";
 		if (frm.doctype === "Customer") return frm.doc.customer_name || frm.doc.name || "";
+		if (frm.doctype === "Supplier") return frm.doc.supplier_name || frm.doc.name || "";
 		if (frm.doctype === "Opportunity") return frm.doc.customer_name || frm.doc.party_name || "";
 		if (TRANSACTIONAL_DOCTYPES.has(frm.doctype)) return frm.doc.contact_person || frm.doc.customer_name || frm.doc.supplier_name || frm.doc.name || "";
 		return "";

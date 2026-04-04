@@ -157,6 +157,13 @@ frappe.ui.form.on("Customer", {
 	},
 });
 
+frappe.ui.form.on("Supplier", {
+	refresh: function (frm) {
+		polygin_handle_refresh(frm);
+		polygin_init_chat(frm);
+	},
+});
+
 frappe.ui.form.on("Opportunity", {
 	refresh: function (frm) {
 		polygin_handle_refresh(frm);
