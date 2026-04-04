@@ -1,6 +1,6 @@
-import re
-
 from frappe.model.document import Document
+
+from polygin.utils import normalize_phone_for_matching
 
 
 class PolyginWaMessages(Document):
@@ -8,11 +8,6 @@ class PolyginWaMessages(Document):
 
 	def before_insert(self):
 		if self.sender_mobile and not self.normalized_phone:
-			self.normalized_phone = _normalize_phone_for_matching(self.sender_mobile)
+			self.normalized_phone = normalize_phone_for_matching(self.sender_mobile)
 		if not self.direction:
 			self.direction = "incoming"
-
-
-def _normalize_phone_for_matching(phone):
-	digits = re.sub(r"[^0-9]", "", str(phone or ""))
-	return digits[-10:] if len(digits) >= 10 else digits

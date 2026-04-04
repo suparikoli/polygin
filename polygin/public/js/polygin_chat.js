@@ -202,7 +202,7 @@ class PolyginChat {
 				} else {
 					// Interactive quick reply — send directly
 					let payload = null;
-					try { payload = match.interactive_payload ? JSON.parse(match.interactive_payload) : null; } catch { payload = null; }
+					try { payload = match.interactive_payload ? JSON.parse(match.interactive_payload) : null; } catch (e) { console.warn("Polygin: failed to parse interactive_payload", e); payload = null; }
 					if (payload) {
 						$ta.val("").trigger("input");
 						const type = match.message_type === "button" ? "interactive_button" : "interactive_list";
@@ -259,7 +259,7 @@ class PolyginChat {
 				if (newMsgs.length > 0) {
 					for (const m of newMsgs) { this.messages.push(m); this.messageIds.add(m.id); }
 					this.messages.sort((a, b) => a.timestamp.localeCompare(b.timestamp));
-					this.render_messages();
+					this._append_new_messages(newMsgs);
 				}
 				this.responseWindow = data.response_window || { is_active: false };
 				this.render_response_window();
@@ -284,6 +284,20 @@ class PolyginChat {
 		for (const msg of this.messages) {
 			const msgDate = this._format_date(msg.timestamp);
 			if (msgDate !== lastDate) { lastDate = msgDate; $list.append(`<div class="polygin-date-separator"><span>${msgDate}</span></div>`); }
+			$list.append(this._render_message(msg));
+		}
+		if (wasAtBottom) { $list[0].scrollTop = $list[0].scrollHeight; }
+	}
+
+	_append_new_messages(newMsgs) {
+		if (!this.$widget) return;
+		const $list = this.$widget.find(".polygin-chat-messages");
+		const wasAtBottom = $list[0].scrollHeight - $list[0].scrollTop - $list[0].clientHeight < 60;
+		$list.find(".polygin-chat-empty").remove();
+		const lastSep = $list.find(".polygin-date-separator:last span").text();
+		for (const msg of newMsgs) {
+			const msgDate = this._format_date(msg.timestamp);
+			if (msgDate && msgDate !== lastSep) { $list.append(`<div class="polygin-date-separator"><span>${msgDate}</span></div>`); }
 			$list.append(this._render_message(msg));
 		}
 		if (wasAtBottom) { $list[0].scrollTop = $list[0].scrollHeight; }
@@ -569,7 +583,7 @@ class PolyginChat {
 						} else {
 							// Interactive quick reply — send directly
 							let payload = null;
-							try { payload = qr.interactive_payload ? JSON.parse(qr.interactive_payload) : null; } catch { payload = null; }
+							try { payload = qr.interactive_payload ? JSON.parse(qr.interactive_payload) : null; } catch (e) { console.warn("Polygin: failed to parse quick reply payload", e); payload = null; }
 							if (payload) {
 								const type = qr.message_type === "button" ? "interactive_button" : "interactive_list";
 								this._send_interactive(type, payload, qr.message);
@@ -640,7 +654,7 @@ class PolyginChat {
 	_render_interactive(msg) {
 		let html = "";
 		let data = null;
-		try { data = msg.raw_data ? JSON.parse(msg.raw_data) : null; } catch { data = null; }
+		try { data = msg.raw_data ? JSON.parse(msg.raw_data) : null; } catch (e) { console.warn("Polygin: failed to parse raw_data", e); data = null; }
 
 		if (data && data.type === "list") {
 			html += `<div class="polygin-msg-text">${frappe.utils.escape_html(data.body?.text || msg.message || "")}</div>`;
@@ -983,8 +997,8 @@ class PolyginChat {
 		const fieldPriority = {
 			Lead: ["whatsapp_no", "mobile_no", "phone"],
 			Contact: ["mobile_no", "phone"],
-			Customer: ["mobile_no"],
-			Supplier: ["mobile_no"],
+			Customer: ["mobile_no", "contact_mobile", "contact_phone"],
+			Supplier: ["mobile_no", "contact_mobile", "contact_phone"],
 			Opportunity: ["whatsapp", "phone"],
 		};
 		// Transactional DocTypes all use contact_mobile
@@ -1013,14 +1027,26 @@ class PolyginChat {
 						["Dynamic Link", "link_name", "=", frm.docname],
 					],
 					fields: ["name", "mobile_no", "phone"],
-					limit_page_length: 1,
+					limit_page_length: 5,
 				});
-				if (contacts && contacts.length > 0) {
-					const c = contacts[0];
+				for (const c of (contacts || [])) {
+					// Check top-level fields first
 					const val = (c.mobile_no || c.phone || "").trim();
 					if (val) return val;
+					// Fallback: check phone_nos child table
+					try {
+						const phoneNos = await frappe.xcall("frappe.client.get_list", {
+							doctype: "Contact Phone",
+							filters: { parent: c.name },
+							fields: ["phone"],
+							limit_page_length: 5,
+						});
+						for (const pn of (phoneNos || [])) {
+							if (pn.phone && pn.phone.trim()) return pn.phone.trim();
+						}
+					} catch (e) { console.warn("Polygin: failed to fetch contact phone_nos", e); }
 				}
-			} catch { /* ignore */ }
+			} catch (e) { console.warn("Polygin: failed to resolve contacts for", frm.doctype, e); }
 		}
 		return null;
 	}

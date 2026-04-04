@@ -1,6 +1,6 @@
-import re
-
 import frappe
+
+from polygin.utils import normalize_phone_for_matching
 
 
 def execute():
@@ -18,18 +18,13 @@ def execute():
 		)
 
 		for record in records:
-			normalized = _normalize(record.sender_mobile)
+			normalized = normalize_phone_for_matching(record.sender_mobile)
 			frappe.db.set_value(doctype, record.name, "normalized_phone", normalized, update_modified=False)
 
 		# Set direction to incoming for all records that don't have it set
-		table = f"tab{doctype}"
-		frappe.db.sql(
-			"UPDATE `{table}` SET direction = 'incoming' WHERE direction IS NULL OR direction = ''".format(table=table.replace("`", ""))
-		)
+		qb_table = frappe.qb.DocType(doctype)
+		frappe.qb.update(qb_table).set(qb_table.direction, "incoming").where(
+			(qb_table.direction.isnull()) | (qb_table.direction == "")
+		).run()
 
 	frappe.db.commit()
-
-
-def _normalize(phone):
-	digits = re.sub(r"[^0-9]", "", str(phone or ""))
-	return digits[-10:] if len(digits) >= 10 else digits

@@ -121,7 +121,7 @@ def handle_api_response(response):
 		return {
 			"success": False,
 			"message": message,
-			"response": {"raw": response.text, "status_code": status_code},
+			"response": {"status_code": status_code},
 		}
 
 	success = bool(response_data.get("success", status_code is None or status_code < 400))
@@ -248,7 +248,6 @@ def send_whatsapp_template(doctype, docname, template_name, phone=None, target_f
 				"sendTo": normalized_phone,
 				"templetName": template_name,
 				"exampleArr": example_arr,
-				"token": api_key,
 			}
 			response = requests.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
 			result = handle_api_response(response)
@@ -304,8 +303,8 @@ def _is_window_active(normalized_match):
 
 def normalize_phone_for_matching(phone):
 	"""Strip to last 10 digits for cross-format phone matching."""
-	digits = re.sub(r"[^0-9]", "", str(phone or ""))
-	return digits[-10:] if len(digits) >= 10 else digits
+	from polygin.utils import normalize_phone_for_matching as _normalize
+	return _normalize(phone)
 
 
 def _parse_timestamp(ts_value):
@@ -318,13 +317,14 @@ def _parse_timestamp(ts_value):
 		pass
 	try:
 		return frappe.utils.get_datetime(ts_value)
-	except Exception:
+	except (ValueError, TypeError):
 		return None
 
 
 @frappe.whitelist()
 def get_chat_messages(phone, channel="whatsapp", page=1, page_size=50):
 	"""Fetch all messages for a phone number, merging incoming, outgoing, and template logs."""
+	frappe.has_permission("Polygin Wa Messages", "read", throw=True)
 	page = cint(page) or 1
 	page_size = min(cint(page_size) or 50, 100)
 	normalized = normalize_phone_for_matching(phone)
@@ -419,6 +419,7 @@ def send_chat_message(phone, message_type, content=None, media_url=None, caption
 	"""Send a message via Polygin Conversational API and store it locally."""
 	import json as _json
 
+	frappe.has_permission("Polygin Wa Messages", "write", throw=True)
 	settings = frappe.get_single("Polygin Settings")
 	api_key = settings.get_password("api_key")
 	base_url = cstr(settings.base_url).strip() or "https://polyg.in"
@@ -465,12 +466,12 @@ def send_chat_message(phone, message_type, content=None, media_url=None, caption
 		return {"success": False, "message": f"Unsupported message type: {message_type}"}
 
 	# Send via Polygin API
-	url = f"{base_url.rstrip('/')}{POLYGIN_CONVERSATIONAL_ENDPOINT}?token={api_key}"
+	url = f"{base_url.rstrip('/')}{POLYGIN_CONVERSATIONAL_ENDPOINT}"
 	try:
 		response = requests.post(
 			url,
 			json={"messageObject": msg_obj},
-			headers={"Content-Type": "application/json"},
+			headers={"Authorization": f"Bearer {api_key}", "Content-Type": "application/json"},
 			timeout=REQUEST_TIMEOUT,
 		)
 		result = handle_api_response(response)
@@ -513,18 +514,41 @@ def send_chat_message(phone, message_type, content=None, media_url=None, caption
 	return result
 
 
+ALLOWED_MEDIA_EXTENSIONS = {
+	".jpg", ".jpeg", ".png", ".gif", ".webp",  # images
+	".mp4", ".3gp",  # video
+	".mp3", ".ogg", ".amr", ".aac",  # audio
+	".pdf", ".doc", ".docx", ".xls", ".xlsx", ".ppt", ".pptx", ".txt", ".csv",  # documents
+}
+MAX_UPLOAD_SIZE_MB = 75
+
+
 @frappe.whitelist()
 def upload_chat_media():
 	"""Upload a file for sending via chat. Returns a public URL."""
+	frappe.has_permission("Polygin Wa Messages", "write", throw=True)
+
 	if "file" not in frappe.request.files:
 		return {"success": False, "message": "No file provided."}
 
 	filedata = frappe.request.files["file"]
+
+	# Validate file extension
+	import os
+	_, ext = os.path.splitext(cstr(filedata.filename).lower())
+	if ext not in ALLOWED_MEDIA_EXTENSIONS:
+		return {"success": False, "message": f"File type '{ext}' is not allowed."}
+
+	# Validate file size
+	file_content = filedata.read()
+	if len(file_content) > MAX_UPLOAD_SIZE_MB * 1024 * 1024:
+		return {"success": False, "message": f"File exceeds {MAX_UPLOAD_SIZE_MB}MB limit."}
+
 	from frappe.utils.file_manager import save_file
 
 	saved = save_file(
 		filedata.filename,
-		filedata.read(),
+		file_content,
 		"Polygin Wa Messages",
 		None,
 		is_private=0,
