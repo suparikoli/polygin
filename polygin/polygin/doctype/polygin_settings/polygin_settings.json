@@ -7,6 +7,7 @@
   "api_key",
   "base_url",
   "enable_logging",
+  "enable_chat_widget",
   "default_country_code",
   "buttons",
   "variable_mapping"
@@ -29,6 +30,12 @@
    "fieldname": "enable_logging",
    "fieldtype": "Check",
    "label": "Enable Logging"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_chat_widget",
+   "fieldtype": "Check",
+   "label": "Enable Chat Widget"
   },
   {
    "default": "+91",

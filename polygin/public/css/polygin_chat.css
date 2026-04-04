@@ -1,0 +1,557 @@
+/* Polygin Chat Widget */
+
+/* ── Chat Bubble (FAB) ─────────────────────────────────────── */
+.polygin-chat-bubble {
+	position: fixed;
+	bottom: 24px;
+	right: 24px;
+	z-index: 1050;
+	width: 56px;
+	height: 56px;
+	border-radius: 50%;
+	background: #25D366;
+	color: #fff;
+	border: none;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+	transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.polygin-chat-bubble:hover {
+	transform: scale(1.08);
+	box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+}
+.polygin-chat-bubble svg,
+.polygin-chat-bubble svg * {
+	width: 28px;
+	height: 28px;
+	fill: #fff;
+	pointer-events: none;
+}
+.polygin-chat-badge {
+	position: absolute;
+	top: -4px;
+	right: -4px;
+	background: #e74c3c;
+	color: #fff;
+	font-size: 11px;
+	font-weight: 700;
+	min-width: 20px;
+	height: 20px;
+	border-radius: 10px;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	padding: 0 5px;
+}
+
+/* ── Widget Panel ──────────────────────────────────────────── */
+.polygin-chat-widget {
+	position: fixed;
+	bottom: 24px;
+	right: 24px;
+	z-index: 1051;
+	width: 400px;
+	height: 560px;
+	border-radius: 12px;
+	background: #fff;
+	display: flex;
+	flex-direction: column;
+	box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+	overflow: hidden;
+	animation: polyginSlideUp 0.25s ease-out;
+}
+
+@keyframes polyginSlideUp {
+	from { opacity: 0; transform: translateY(20px); }
+	to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Fullscreen Mode ───────────────────────────────────────── */
+.polygin-chat-fullscreen {
+	position: fixed;
+	inset: 0;
+	z-index: 1060;
+	width: 100%;
+	height: 100%;
+	border-radius: 0;
+	bottom: 0;
+	right: 0;
+	animation: none;
+}
+.polygin-chat-fullscreen .polygin-chat-messages {
+	padding: 20px 15%;
+}
+.polygin-chat-fullscreen .polygin-chat-input-area {
+	padding: 12px 15%;
+}
+
+/* ── Header ────────────────────────────────────────────────── */
+.polygin-chat-header {
+	background: #075E54;
+	color: #fff;
+	padding: 12px 16px;
+	display: flex;
+	align-items: center;
+	gap: 12px;
+	flex-shrink: 0;
+}
+.polygin-chat-avatar {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	background: #128C7E;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-weight: 700;
+	font-size: 16px;
+	flex-shrink: 0;
+}
+.polygin-chat-header-info {
+	flex: 1;
+	min-width: 0;
+}
+.polygin-chat-header-name {
+	font-weight: 600;
+	font-size: 15px;
+	white-space: nowrap;
+	overflow: hidden;
+	text-overflow: ellipsis;
+}
+.polygin-chat-header-phone {
+	font-size: 12px;
+	opacity: 0.85;
+}
+.polygin-chat-header-actions {
+	display: flex;
+	gap: 8px;
+	align-items: center;
+}
+
+/* ── macOS Traffic Light Buttons ───────────────────────────── */
+.polygin-traffic-light {
+	width: 14px;
+	height: 14px;
+	border-radius: 50%;
+	display: inline-block;
+	cursor: pointer;
+	position: relative;
+	transition: opacity 0.15s, filter 0.15s;
+	border: 0.5px solid rgba(0,0,0,0.12);
+}
+.polygin-traffic-light:hover {
+	filter: brightness(0.85);
+}
+.polygin-traffic-light::after {
+	position: absolute;
+	inset: 0;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 9px;
+	font-weight: 700;
+	line-height: 1;
+	opacity: 0;
+	transition: opacity 0.15s;
+	color: rgba(0,0,0,0.5);
+}
+.polygin-chat-header-actions:hover .polygin-traffic-light::after {
+	opacity: 1;
+}
+.polygin-tl-close {
+	background: #ff5f57;
+}
+.polygin-tl-close::after {
+	content: "\00D7";
+}
+.polygin-tl-minimize {
+	background: #febc2e;
+}
+.polygin-tl-minimize::after {
+	content: "\2013";
+	font-size: 10px;
+}
+.polygin-tl-fullscreen {
+	background: #28c840;
+}
+.polygin-tl-fullscreen::after {
+	content: "\2922";
+	font-size: 8px;
+}
+
+/* ── Response Window Bar ───────────────────────────────────── */
+.polygin-chat-response-window {
+	padding: 6px 16px;
+	font-size: 12px;
+	display: flex;
+	align-items: center;
+	gap: 6px;
+	flex-shrink: 0;
+}
+.polygin-chat-response-window.active {
+	background: #d4edda;
+	color: #155724;
+}
+.polygin-chat-response-window.expired {
+	background: #f8d7da;
+	color: #721c24;
+}
+.polygin-chat-response-window .rw-icon {
+	font-size: 14px;
+}
+
+/* ── Message Area ──────────────────────────────────────────── */
+.polygin-chat-messages {
+	flex: 1;
+	overflow-y: auto;
+	background: #ECE5DD;
+	padding: 12px 16px;
+	display: flex;
+	flex-direction: column;
+	gap: 4px;
+}
+.polygin-chat-messages::-webkit-scrollbar {
+	width: 6px;
+}
+.polygin-chat-messages::-webkit-scrollbar-thumb {
+	background: rgba(0,0,0,0.2);
+	border-radius: 3px;
+}
+.polygin-chat-empty {
+	flex: 1;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	color: #8696a0;
+	font-size: 14px;
+}
+.polygin-chat-loading {
+	text-align: center;
+	padding: 20px;
+	color: #8696a0;
+}
+
+/* ── Date Separator ────────────────────────────────────────── */
+.polygin-date-separator {
+	text-align: center;
+	margin: 8px 0;
+}
+.polygin-date-separator span {
+	background: #e1f2fb;
+	color: #54656f;
+	font-size: 12px;
+	padding: 4px 12px;
+	border-radius: 8px;
+	display: inline-block;
+}
+
+/* ── Message Bubbles ───────────────────────────────────────── */
+.polygin-msg {
+	max-width: 75%;
+	padding: 6px 10px 4px;
+	border-radius: 8px;
+	position: relative;
+	word-wrap: break-word;
+	line-height: 1.4;
+	font-size: 14px;
+}
+.polygin-msg-incoming {
+	align-self: flex-start;
+	background: #fff;
+	border-top-left-radius: 0;
+}
+.polygin-msg-outgoing {
+	align-self: flex-end;
+	background: #DCF8C6;
+	border-top-right-radius: 0;
+}
+.polygin-msg-template {
+	align-self: flex-end;
+	background: #d1e7ff;
+	border-top-right-radius: 0;
+	border: 1px dashed #6ea8fe;
+}
+.polygin-msg-template .polygin-msg-badge {
+	display: inline-block;
+	background: #6ea8fe;
+	color: #fff;
+	font-size: 10px;
+	padding: 1px 6px;
+	border-radius: 4px;
+	margin-bottom: 4px;
+}
+.polygin-msg-text {
+	white-space: pre-wrap;
+}
+.polygin-msg-meta {
+	font-size: 11px;
+	color: #8696a0;
+	text-align: right;
+	margin-top: 2px;
+}
+.polygin-msg-sender {
+	font-size: 12px;
+	font-weight: 600;
+	color: #075E54;
+	margin-bottom: 2px;
+}
+
+/* ── Media in Messages ─────────────────────────────────────── */
+.polygin-msg-image img {
+	max-width: 100%;
+	border-radius: 6px;
+	display: block;
+	margin-bottom: 4px;
+	cursor: pointer;
+}
+.polygin-msg-document {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	padding: 8px;
+	background: rgba(0,0,0,0.04);
+	border-radius: 6px;
+	margin-bottom: 4px;
+	text-decoration: none;
+	color: inherit;
+}
+.polygin-msg-document:hover {
+	background: rgba(0,0,0,0.08);
+}
+.polygin-msg-doc-icon {
+	font-size: 24px;
+	flex-shrink: 0;
+}
+.polygin-msg-doc-name {
+	font-size: 13px;
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+}
+.polygin-msg-audio audio {
+	max-width: 100%;
+	height: 36px;
+}
+.polygin-msg-video video {
+	max-width: 100%;
+	border-radius: 6px;
+	display: block;
+	margin-bottom: 4px;
+}
+
+/* ── Input Area ────────────────────────────────────────────── */
+.polygin-chat-input-area {
+	padding: 8px 12px;
+	background: #f0f2f5;
+	display: flex;
+	align-items: flex-end;
+	gap: 8px;
+	flex-shrink: 0;
+}
+.polygin-chat-input-wrapper {
+	flex: 1;
+	display: flex;
+	align-items: flex-end;
+	background: #fff;
+	border-radius: 20px;
+	padding: 4px 12px;
+	min-height: 40px;
+}
+.polygin-chat-input-wrapper textarea {
+	flex: 1;
+	border: none;
+	outline: none;
+	resize: none;
+	font-size: 14px;
+	line-height: 1.4;
+	max-height: 100px;
+	min-height: 20px;
+	background: transparent;
+	font-family: inherit;
+}
+.polygin-chat-send-btn {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	border: none;
+	background: #25D366;
+	color: #fff;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	flex-shrink: 0;
+	transition: background 0.15s;
+}
+.polygin-chat-send-btn:hover {
+	background: #128C7E;
+}
+.polygin-chat-send-btn:disabled {
+	background: #ccc;
+	cursor: not-allowed;
+}
+
+/* ── Attach Button & Menu ──────────────────────────────────── */
+.polygin-chat-attach-btn {
+	width: 40px;
+	height: 40px;
+	border-radius: 50%;
+	border: none;
+	background: none;
+	color: #54656f;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	font-size: 20px;
+	flex-shrink: 0;
+	transition: background 0.15s;
+}
+.polygin-chat-attach-btn:hover {
+	background: rgba(0,0,0,0.08);
+}
+.polygin-chat-attach-menu {
+	position: absolute;
+	bottom: 60px;
+	left: 12px;
+	background: #fff;
+	border-radius: 8px;
+	box-shadow: 0 4px 16px rgba(0,0,0,0.15);
+	padding: 4px 0;
+	z-index: 10;
+	min-width: 160px;
+}
+.polygin-chat-attach-item {
+	padding: 10px 16px;
+	cursor: pointer;
+	font-size: 14px;
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	transition: background 0.1s;
+}
+.polygin-chat-attach-item:hover {
+	background: #f0f2f5;
+}
+.polygin-chat-attach-item .attach-icon {
+	font-size: 18px;
+	width: 24px;
+	text-align: center;
+}
+
+/* ── Expired State ─────────────────────────────────────────── */
+.polygin-chat-expired-bar {
+	padding: 12px 16px;
+	background: #fff3cd;
+	border-top: 1px solid #eee;
+	text-align: center;
+	flex-shrink: 0;
+}
+.polygin-chat-expired-bar p {
+	margin: 0 0 8px;
+	font-size: 13px;
+	color: #856404;
+}
+.polygin-chat-template-btns {
+	display: flex;
+	flex-wrap: wrap;
+	gap: 6px;
+	justify-content: center;
+}
+.polygin-chat-template-btn {
+	padding: 6px 14px;
+	border: 1px solid #075E54;
+	border-radius: 18px;
+	background: #fff;
+	color: #075E54;
+	font-size: 13px;
+	cursor: pointer;
+	transition: all 0.15s;
+}
+.polygin-chat-template-btn:hover {
+	background: #075E54;
+	color: #fff;
+}
+
+/* ── Upload Progress ───────────────────────────────────────── */
+.polygin-chat-uploading {
+	padding: 8px 16px;
+	background: #e8f4fd;
+	font-size: 13px;
+	color: #0c5460;
+	text-align: center;
+	flex-shrink: 0;
+}
+
+/* ── Interactive Message Composer Modal ─────────────────────── */
+.polygin-interactive-overlay {
+	position: absolute;
+	inset: 0;
+	background: rgba(0,0,0,0.4);
+	z-index: 20;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+}
+.polygin-interactive-modal {
+	background: #fff;
+	border-radius: 12px;
+	padding: 20px;
+	width: 90%;
+	max-width: 400px;
+	max-height: 80%;
+	overflow-y: auto;
+}
+.polygin-interactive-modal h4 {
+	margin: 0 0 12px;
+	font-size: 16px;
+}
+.polygin-interactive-modal label {
+	display: block;
+	font-size: 13px;
+	font-weight: 600;
+	margin: 8px 0 4px;
+}
+.polygin-interactive-modal input,
+.polygin-interactive-modal textarea {
+	width: 100%;
+	padding: 8px;
+	border: 1px solid #ddd;
+	border-radius: 6px;
+	font-size: 14px;
+	font-family: inherit;
+}
+.polygin-interactive-modal .modal-actions {
+	display: flex;
+	gap: 8px;
+	margin-top: 16px;
+	justify-content: flex-end;
+}
+.polygin-interactive-modal .modal-actions button {
+	padding: 8px 20px;
+	border-radius: 6px;
+	border: none;
+	cursor: pointer;
+	font-size: 14px;
+}
+.polygin-interactive-modal .btn-send {
+	background: #075E54;
+	color: #fff;
+}
+.polygin-interactive-modal .btn-cancel {
+	background: #eee;
+	color: #333;
+}
+
+/* ── Responsive ────────────────────────────────────────────── */
+@media (max-width: 480px) {
+	.polygin-chat-widget {
+		width: calc(100% - 16px);
+		right: 8px;
+		bottom: 8px;
+		height: calc(100vh - 80px);
+	}
+}

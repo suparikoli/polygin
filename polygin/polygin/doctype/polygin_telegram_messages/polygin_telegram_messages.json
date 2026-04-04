@@ -1,0 +1,108 @@
+{
+ "actions": [],
+ "autoname": "format:TG-{####}",
+ "creation": "2026-04-04 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "sender_name",
+  "sender_mobile",
+  "message",
+  "message_type",
+  "media_file",
+  "timestamp",
+  "uid",
+  "origin",
+  "direction",
+  "normalized_phone",
+  "raw_data"
+ ],
+ "fields": [
+  {
+   "fieldname": "sender_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Sender Name"
+  },
+  {
+   "fieldname": "sender_mobile",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Sender Mobile"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "label": "Message"
+  },
+  {
+   "fieldname": "message_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Message Type",
+   "options": "text\nimage\nvideo\naudio\ndocument\nsticker\nlocation\ncontact\nreaction\npoll\ntemplate\nstatus\ninteractive\nbutton\nunknown"
+  },
+  {
+   "fieldname": "media_file",
+   "fieldtype": "Attach",
+   "label": "Media File"
+  },
+  {
+   "fieldname": "timestamp",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Timestamp"
+  },
+  {
+   "fieldname": "uid",
+   "fieldtype": "Data",
+   "label": "UID"
+  },
+  {
+   "default": "telegram",
+   "fieldname": "origin",
+   "fieldtype": "Data",
+   "label": "Origin"
+  },
+  {
+   "default": "incoming",
+   "fieldname": "direction",
+   "fieldtype": "Select",
+   "label": "Direction",
+   "options": "incoming\noutgoing"
+  },
+  {
+   "fieldname": "normalized_phone",
+   "fieldtype": "Data",
+   "hidden": 1,
+   "label": "Normalized Phone"
+  },
+  {
+   "fieldname": "raw_data",
+   "fieldtype": "Long Text",
+   "label": "Raw Data"
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-04 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Polygin",
+ "name": "Polygin Telegram Messages",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}

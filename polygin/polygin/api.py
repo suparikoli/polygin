@@ -237,3 +237,235 @@ def send_whatsapp_template(doctype, docname, template_name, target_field):
 # Aliases from frappe.utils for concise conversions used across this module.
 cint = frappe.utils.cint
 cstr = frappe.utils.cstr
+
+
+# ---------------------------------------------------------------------------
+# Chat Widget API
+# ---------------------------------------------------------------------------
+
+POLYGIN_CONVERSATIONAL_ENDPOINT = "/api/v1/send-message"
+
+
+def normalize_phone_for_matching(phone):
+	"""Strip to last 10 digits for cross-format phone matching."""
+	digits = re.sub(r"[^0-9]", "", str(phone or ""))
+	return digits[-10:] if len(digits) >= 10 else digits
+
+
+def _parse_timestamp(ts_value):
+	"""Parse timestamp from various formats (unix epoch string or ISO/datetime string)."""
+	if not ts_value:
+		return None
+	try:
+		return frappe.utils.get_datetime(float(ts_value))
+	except (ValueError, TypeError, OSError):
+		pass
+	try:
+		return frappe.utils.get_datetime(ts_value)
+	except Exception:
+		return None
+
+
+@frappe.whitelist()
+def get_chat_messages(phone, channel="whatsapp", page=1, page_size=50):
+	"""Fetch all messages for a phone number, merging incoming, outgoing, and template logs."""
+	page = cint(page) or 1
+	page_size = min(cint(page_size) or 50, 100)
+	normalized = normalize_phone_for_matching(phone)
+
+	if not normalized:
+		return {"messages": [], "has_more": False, "response_window": {"is_active": False}}
+
+	doctype = "Polygin Wa Messages" if channel == "whatsapp" else "Polygin Telegram Messages"
+	messages = []
+
+	# Fetch from message doctype
+	raw_msgs = frappe.get_all(
+		doctype,
+		filters={"normalized_phone": normalized},
+		fields=[
+			"name", "sender_name", "sender_mobile", "message", "message_type",
+			"media_file", "timestamp", "uid", "origin", "direction", "creation",
+		],
+		order_by="creation desc",
+		limit_page_length=page_size + 1,
+		limit_start=(page - 1) * page_size,
+	)
+
+	has_more = len(raw_msgs) > page_size
+	raw_msgs = raw_msgs[:page_size]
+
+	for msg in raw_msgs:
+		parsed_ts = _parse_timestamp(msg.timestamp)
+		messages.append({
+			"id": msg.name,
+			"direction": msg.direction or "incoming",
+			"message": msg.message,
+			"message_type": msg.message_type,
+			"media_url": msg.media_file,
+			"timestamp": str(parsed_ts) if parsed_ts else str(msg.creation),
+			"sender_name": msg.sender_name,
+			"source": "message",
+			"origin": msg.origin,
+		})
+
+	# Also fetch template sends from Polygin Message Log for this number
+	if channel == "whatsapp" and page == 1:
+		log_records = frappe.get_all(
+			"Polygin Message Log",
+			filters={"status": "Success"},
+			fields=["name", "recipient", "template", "response", "timestamp", "creation"],
+			order_by="creation desc",
+			limit_page_length=200,
+		)
+		for log in log_records:
+			log_normalized = normalize_phone_for_matching(log.recipient)
+			if log_normalized == normalized:
+				messages.append({
+					"id": log.name,
+					"direction": "outgoing",
+					"message": f"[Template: {log.template}]",
+					"message_type": "template",
+					"media_url": None,
+					"timestamp": str(log.timestamp or log.creation),
+					"sender_name": "You",
+					"source": "template_log",
+					"origin": "outgoing",
+				})
+
+	# Sort all by timestamp ascending
+	messages.sort(key=lambda m: m["timestamp"])
+
+	# Compute response window from the last incoming message
+	response_window = {"is_active": False, "seconds_remaining": 0, "expires_at": None}
+	incoming_msgs = [m for m in messages if m["direction"] == "incoming"]
+	if incoming_msgs:
+		last_incoming_ts = _parse_timestamp(incoming_msgs[-1]["timestamp"])
+		if last_incoming_ts:
+			now = frappe.utils.now_datetime()
+			expires_at = last_incoming_ts + frappe.utils.datetime.timedelta(hours=24)
+			remaining = (expires_at - now).total_seconds()
+			response_window = {
+				"is_active": remaining > 0,
+				"seconds_remaining": max(0, int(remaining)),
+				"expires_at": str(expires_at),
+			}
+
+	return {"messages": messages, "has_more": has_more, "response_window": response_window}
+
+
+@frappe.whitelist()
+def send_chat_message(phone, message_type, content=None, media_url=None, caption=None, interactive_data=None):
+	"""Send a message via Polygin Conversational API and store it locally."""
+	import json as _json
+
+	settings = frappe.get_single("Polygin Settings")
+	api_key = settings.get_password("api_key")
+	base_url = cstr(settings.base_url).strip() or "https://polyg.in"
+	default_country_code = cstr(settings.default_country_code).strip() or "+91"
+
+	if not api_key:
+		return {"success": False, "message": "Polygin API key is not configured."}
+
+	normalized_for_api = normalize_phone(phone, default_country_code)
+	if not normalized_for_api:
+		return {"success": False, "message": "Invalid phone number."}
+
+	# Build messageObject based on type
+	msg_obj = {"to": normalized_for_api.lstrip("+")}
+
+	if message_type == "text":
+		msg_obj["type"] = "text"
+		msg_obj["text"] = {"preview_url": False, "body": content or ""}
+	elif message_type == "image":
+		msg_obj["type"] = "image"
+		msg_obj["image"] = {"link": media_url}
+	elif message_type == "audio":
+		msg_obj["type"] = "audio"
+		msg_obj["audio"] = {"link": media_url}
+	elif message_type == "document":
+		msg_obj["type"] = "document"
+		msg_obj["document"] = {"link": media_url, "caption": caption or ""}
+	elif message_type == "video":
+		msg_obj["type"] = "video"
+		msg_obj["video"] = {"link": media_url, "caption": caption or ""}
+	elif message_type in ("interactive_list", "interactive_button"):
+		msg_obj["type"] = "interactive"
+		try:
+			msg_obj["interactive"] = _json.loads(interactive_data) if isinstance(interactive_data, str) else interactive_data
+		except (ValueError, TypeError):
+			return {"success": False, "message": "Invalid interactive message data."}
+	else:
+		return {"success": False, "message": f"Unsupported message type: {message_type}"}
+
+	# Send via Polygin API
+	url = f"{base_url.rstrip('/')}{POLYGIN_CONVERSATIONAL_ENDPOINT}?token={api_key}"
+	try:
+		response = requests.post(
+			url,
+			json={"messageObject": msg_obj},
+			headers={"Content-Type": "application/json"},
+			timeout=REQUEST_TIMEOUT,
+		)
+		result = handle_api_response(response)
+	except requests.RequestException as exc:
+		error_message, _ = _parse_request_exception(exc)
+		return {"success": False, "message": f"Failed to send message: {error_message}"}
+
+	if not result.get("success"):
+		return result
+
+	# Store outgoing message locally
+	display_message = content or caption or f"[{message_type}]"
+	try:
+		doc = frappe.get_doc({
+			"doctype": "Polygin Wa Messages",
+			"sender_name": frappe.utils.get_fullname(frappe.session.user),
+			"sender_mobile": normalized_for_api,
+			"message": display_message,
+			"message_type": message_type if message_type not in ("interactive_list", "interactive_button") else "interactive",
+			"media_file": media_url,
+			"timestamp": str(frappe.utils.now_datetime()),
+			"origin": "outgoing",
+			"direction": "outgoing",
+			"normalized_phone": normalize_phone_for_matching(phone),
+		})
+		doc.insert(ignore_permissions=True)
+	except Exception:
+		frappe.log_error(frappe.get_traceback(), "Polygin Chat: Failed to store outgoing message")
+
+	return result
+
+
+@frappe.whitelist()
+def upload_chat_media():
+	"""Upload a file for sending via chat. Returns a public URL."""
+	if "file" not in frappe.request.files:
+		return {"success": False, "message": "No file provided."}
+
+	filedata = frappe.request.files["file"]
+	from frappe.utils.file_manager import save_file
+
+	saved = save_file(
+		filedata.filename,
+		filedata.read(),
+		"Polygin Wa Messages",
+		None,
+		is_private=0,
+	)
+
+	file_url = saved.file_url
+	if file_url and not file_url.startswith("http"):
+		file_url = frappe.utils.get_url(file_url)
+
+	return {"success": True, "file_url": file_url, "file_name": saved.file_name}
+
+
+@frappe.whitelist()
+def get_chat_settings():
+	"""Return chat widget configuration."""
+	settings = frappe.get_single("Polygin Settings")
+	return {
+		"enable_chat_widget": cint(settings.get("enable_chat_widget", 1)),
+		"default_country_code": cstr(settings.default_country_code).strip() or "+91",
+	}

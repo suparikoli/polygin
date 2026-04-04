@@ -3,5 +3,11 @@
 This keeps method paths stable as `polygin.api.<method>`.
 """
 
-from polygin.polygin.api import get_buttons, send_whatsapp_template  # noqa: F401
-
+from polygin.polygin.api import (  # noqa: F401
+	get_buttons,
+	get_chat_messages,
+	get_chat_settings,
+	send_chat_message,
+	send_whatsapp_template,
+	upload_chat_media,
+)

@@ -1,6 +1,6 @@
 {
  "charts": [],
- "content": "[{\"id\":\"polygin_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Polygin</span>\",\"col\":12}},{\"id\":\"polygin_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Settings\",\"col\":3}},{\"id\":\"polygin_logs_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Message Log\",\"col\":3}}]",
+ "content": "[{\"id\":\"polygin_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Polygin</span>\",\"col\":12}},{\"id\":\"polygin_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Settings\",\"col\":3}},{\"id\":\"polygin_logs_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Message Log\",\"col\":3}},{\"id\":\"polygin_wa_messages_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Wa Messages\",\"col\":3}},{\"id\":\"polygin_telegram_messages_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Telegram Messages\",\"col\":3}}]",
  "creation": "2026-03-18 00:00:00",
  "custom_blocks": [],
  "docstatus": 0,
@@ -32,9 +32,29 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Polygin Wa Messages",
+   "link_count": 0,
+   "link_to": "Polygin Wa Messages",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Polygin Telegram Messages",
+   "link_count": 0,
+   "link_to": "Polygin Telegram Messages",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-03-18 00:00:00.000000",
+ "modified": "2026-04-04 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Polygin",
  "name": "Polygin",
@@ -60,6 +80,22 @@
    "format": "{} List",
    "label": "Polygin Message Log",
    "link_to": "Polygin Message Log",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "{} List",
+   "label": "Polygin Wa Messages",
+   "link_to": "Polygin Wa Messages",
+   "type": "DocType"
+  },
+  {
+   "color": "Cyan",
+   "doc_view": "List",
+   "format": "{} List",
+   "label": "Polygin Telegram Messages",
+   "link_to": "Polygin Telegram Messages",
    "type": "DocType"
   }
  ],
