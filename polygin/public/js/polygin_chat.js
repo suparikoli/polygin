@@ -656,6 +656,14 @@ class PolyginChat {
 		let data = null;
 		try { data = msg.raw_data ? JSON.parse(msg.raw_data) : null; } catch (e) { console.warn("Polygin: failed to parse raw_data", e); data = null; }
 
+		// Normalize: webhook raw_data nests interactive content inside msgContext.interactive
+		// while locally-sent messages store {type, body, action} directly
+		if (data && data.msgContext?.interactive) {
+			data = data.msgContext.interactive;
+		} else if (data && data.msgContext?.type === "interactive" && !data.body && !data.action) {
+			data = data.msgContext.interactive || data.msgContext;
+		}
+
 		if (data && data.type === "list") {
 			html += `<div class="polygin-msg-text">${frappe.utils.escape_html(data.body?.text || msg.message || "")}</div>`;
 			if (data.action?.sections) {
