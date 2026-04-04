@@ -190,6 +190,24 @@
 	font-size: 10px;
 }
 
+/* ── Send Document Button ──────────────────────────────────── */
+.polygin-send-doc-btn {
+	background: none;
+	border: none;
+	color: #fff;
+	cursor: pointer;
+	font-size: 16px;
+	padding: 4px 6px;
+	border-radius: 4px;
+	opacity: 0.85;
+	transition: opacity 0.15s, background 0.15s;
+	line-height: 1;
+}
+.polygin-send-doc-btn:hover {
+	opacity: 1;
+	background: rgba(255,255,255,0.15);
+}
+
 /* ── Response Window Bar ───────────────────────────────────── */
 .polygin-chat-response-window {
 	padding: 6px 16px;

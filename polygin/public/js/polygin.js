@@ -163,3 +163,16 @@ frappe.ui.form.on("Opportunity", {
 		polygin_init_chat(frm);
 	},
 });
+
+const _polygin_transaction_doctypes = [
+	"Sales Invoice", "Sales Order", "Quotation",
+	"Delivery Note", "Purchase Order", "Purchase Invoice",
+];
+_polygin_transaction_doctypes.forEach((dt) => {
+	frappe.ui.form.on(dt, {
+		refresh: function (frm) {
+			polygin_handle_refresh(frm);
+			polygin_init_chat(frm);
+		},
+	});
+});

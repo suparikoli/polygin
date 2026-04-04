@@ -5,6 +5,11 @@
  * Loaded globally via app_include_js, instantiated from polygin.js per-form.
  */
 
+const TRANSACTIONAL_DOCTYPES = new Set([
+	"Sales Invoice", "Sales Order", "Quotation",
+	"Delivery Note", "Purchase Order", "Purchase Invoice",
+]);
+
 // WhatsApp character limits
 const WA_LIMITS = {
 	TEXT_BODY: 4096,
@@ -104,6 +109,8 @@ class PolyginChat {
 
 	_render_widget_content() {
 		const initials = (this.contact_name || "?").charAt(0).toUpperCase();
+		const isTransactional = TRANSACTIONAL_DOCTYPES.has(this.doctype);
+		const sendDocBtn = isTransactional ? `<button class="polygin-send-doc-btn" title="Send Document">&#x1F4E4;</button>` : "";
 		this.$widget.html(`
 			<div class="polygin-chat-header">
 				<div class="polygin-chat-avatar">${initials}</div>
@@ -112,6 +119,7 @@ class PolyginChat {
 					<div class="polygin-chat-header-phone">${frappe.utils.escape_html(this.phone)}</div>
 				</div>
 				<div class="polygin-chat-header-actions">
+					${sendDocBtn}
 					<span class="polygin-traffic-light polygin-tl-fullscreen" title="Fullscreen"></span>
 					<span class="polygin-traffic-light polygin-tl-close" title="Close"></span>
 				</div>
@@ -135,6 +143,7 @@ class PolyginChat {
 		`);
 
 		this.$widget.find(".polygin-tl-close").on("click", () => this.collapse_to_bubble());
+		this.$widget.find(".polygin-send-doc-btn").on("click", () => this._send_document());
 		this.$widget.find(".polygin-tl-fullscreen").on("click", () => {
 			this.isFullscreen ? this.collapse_to_widget() : this.expand_to_fullscreen();
 		});
@@ -395,8 +404,23 @@ class PolyginChat {
 	}
 
 	_send_template(templateName) {
-		const fieldMap = { Lead: ["whatsapp_no", "mobile_no", "phone"], Contact: ["mobile_no", "phone"], Customer: ["mobile_no"], Opportunity: ["whatsapp", "phone"] };
-		const targetField = (fieldMap[this.doctype] || ["mobile_no"])[0];
+		// Warn if 24h window is open — use conversational messaging instead
+		if (this.responseWindow.is_active) {
+			frappe.confirm(
+				__("The 24-hour response window is still open. You can send regular messages instead of using a template. Send template anyway?"),
+				() => this._do_send_template(templateName),
+			);
+			return;
+		}
+		this._do_send_template(templateName);
+	}
+
+	_do_send_template(templateName) {
+		const fieldMap = {
+			Lead: ["whatsapp_no", "mobile_no", "phone"], Contact: ["mobile_no", "phone"],
+			Customer: ["mobile_no"], Opportunity: ["whatsapp", "phone"],
+		};
+		const targetField = TRANSACTIONAL_DOCTYPES.has(this.doctype) ? "contact_mobile" : (fieldMap[this.doctype] || ["mobile_no"])[0];
 		frappe.call({
 			method: "polygin.api.send_whatsapp_template",
 			args: { doctype: this.doctype, docname: this.docname, template_name: templateName, target_field: targetField },
@@ -405,6 +429,23 @@ class PolyginChat {
 				const resp = r.message || {};
 				if (resp.success) { frappe.show_alert({ message: __("Template sent!"), indicator: "green" }); setTimeout(() => this.fetch_messages(), 1500); }
 				else { frappe.msgprint(resp.message || __("Failed to send template.")); }
+			},
+		});
+	}
+
+	_send_document() {
+		frappe.call({
+			method: "polygin.api.send_document_via_template",
+			args: { doctype: this.doctype, docname: this.docname, phone: this.phone },
+			freeze: true, freeze_message: __("Sending document..."),
+			callback: (r) => {
+				const resp = r.message || {};
+				if (resp.success) {
+					frappe.show_alert({ message: resp.message || __("Document sent!"), indicator: "green" });
+					setTimeout(() => this.fetch_messages(), 1500);
+				} else {
+					frappe.msgprint(resp.message || __("Failed to send document."));
+				}
 			},
 		});
 	}
@@ -946,7 +987,18 @@ class PolyginChat {
 	// ── Phone Resolution (static) ────────────────────────────
 
 	static resolve_phone(frm) {
-		const fieldPriority = { Lead: ["whatsapp_no", "mobile_no", "phone"], Contact: ["mobile_no", "phone"], Customer: ["mobile_no"], Opportunity: ["whatsapp", "phone"] };
+		const fieldPriority = {
+			Lead: ["whatsapp_no", "mobile_no", "phone"],
+			Contact: ["mobile_no", "phone"],
+			Customer: ["mobile_no"],
+			Opportunity: ["whatsapp", "phone"],
+		};
+		// Transactional DocTypes all use contact_mobile
+		if (TRANSACTIONAL_DOCTYPES.has(frm.doctype)) {
+			const fields = ["contact_mobile", "contact_phone"];
+			for (const f of fields) { const val = frm.doc[f]; if (val && val.trim()) return val.trim(); }
+			return null;
+		}
 		const fields = fieldPriority[frm.doctype] || ["mobile_no", "phone"];
 		for (const f of fields) { const val = frm.doc[f]; if (val && val.trim()) return val.trim(); }
 		return null;
@@ -957,6 +1009,7 @@ class PolyginChat {
 		if (frm.doctype === "Contact") return frm.doc.first_name ? `${frm.doc.first_name} ${frm.doc.last_name || ""}`.trim() : "";
 		if (frm.doctype === "Customer") return frm.doc.customer_name || frm.doc.name || "";
 		if (frm.doctype === "Opportunity") return frm.doc.customer_name || frm.doc.party_name || "";
+		if (TRANSACTIONAL_DOCTYPES.has(frm.doctype)) return frm.doc.contact_person || frm.doc.customer_name || frm.doc.supplier_name || frm.doc.name || "";
 		return "";
 	}
 

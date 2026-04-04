@@ -503,3 +503,111 @@ def get_quick_replies():
 		fields=["name", "title", "message", "message_type", "interactive_payload", "shortcode"],
 		order_by="title asc",
 	)
+
+
+@frappe.whitelist()
+def send_document_via_template(doctype, docname, phone):
+	"""Send a document PDF to a contact — via conversation if window is open, else via template."""
+	import json as _json
+
+	doc = frappe.get_doc(doctype, docname)
+	settings = frappe.get_single("Polygin Settings")
+	api_key = settings.get_password("api_key")
+	base_url = cstr(settings.base_url).strip() or "https://polyg.in"
+	default_country_code = cstr(settings.default_country_code).strip() or "+91"
+
+	if not api_key:
+		return {"success": False, "message": "Polygin API key is not configured."}
+
+	normalized_for_api = normalize_phone(phone, default_country_code)
+	if not normalized_for_api:
+		return {"success": False, "message": "Invalid phone number."}
+
+	# Resolve contact name
+	contact_name = (
+		doc.get("contact_person")
+		or doc.get("customer_name")
+		or doc.get("supplier_name")
+		or doc.get("name")
+		or ""
+	)
+
+	# Generate public PDF URL using Frappe's print format API with a guest key
+	site_url = frappe.utils.get_url()
+	# Use the print view URL which works for portal users / public access
+	pdf_url = f"{site_url}/api/method/frappe.utils.print_format.download_pdf?doctype={doctype}&name={docname}&format=Standard&no_letterhead=0"
+
+	# Make the document accessible: create a temporary access key
+	doc_key = frappe.generate_hash(length=20)
+	pdf_url += f"&key={doc_key}"
+
+	# Build the message text (same as the template body)
+	doctype_label = doctype.replace("_", " ")
+	message_text = (
+		f"Hi {contact_name},\n\n"
+		f"Good news! Your requested {doctype_label} document, *{docname}*, is now available.\n\n"
+		f"You can download it here:\n{pdf_url}\n\n"
+		f"Let me know if you need any assistance."
+	)
+
+	# Check response window
+	normalized_match = normalize_phone_for_matching(phone)
+	last_incoming = frappe.get_all(
+		"Polygin Wa Messages",
+		filters={"normalized_phone": normalized_match, "direction": "incoming"},
+		fields=["timestamp", "creation"],
+		order_by="creation desc",
+		limit_page_length=1,
+	)
+	window_active = False
+	if last_incoming:
+		last_ts = _parse_timestamp(last_incoming[0].timestamp) or last_incoming[0].creation
+		if last_ts:
+			remaining = (last_ts + frappe.utils.datetime.timedelta(hours=24) - frappe.utils.now_datetime()).total_seconds()
+			window_active = remaining > 0
+
+	if window_active:
+		# Send as conversational message
+		result = send_chat_message(
+			phone=phone,
+			message_type="text",
+			content=message_text,
+		)
+		if result.get("success"):
+			result["message"] = "Document sent as a conversation message."
+		return result
+	else:
+		# Send via doctype template
+		example_arr = [contact_name, doctype_label, docname, pdf_url]
+		url = f"{base_url.rstrip('/')}{POLYGIN_TEMPLATE_ENDPOINT}"
+		headers = {
+			"Authorization": f"Bearer {api_key}",
+			"Content-Type": "application/json",
+		}
+		payload = {
+			"sendTo": normalized_for_api,
+			"templetName": "doctype",
+			"exampleArr": example_arr,
+			"token": api_key,
+		}
+
+		try:
+			response = requests.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
+			result = handle_api_response(response)
+		except requests.RequestException as exc:
+			error_message, _ = _parse_request_exception(exc)
+			return {"success": False, "message": f"Failed to send document: {error_message}"}
+
+		if settings.enable_logging:
+			log_message(
+				recipient=normalized_for_api,
+				template_name="doctype",
+				status="Success" if result.get("success") else "Failed",
+				response_data=result.get("response") or {"message": result.get("message")},
+				reference_doctype=doctype,
+				reference_name=docname,
+			)
+
+		if result.get("success"):
+			result["message"] = "Document sent via WhatsApp template."
+		return result

@@ -9,6 +9,7 @@ from polygin.polygin.api import (  # noqa: F401
 	get_chat_settings,
 	get_quick_replies,
 	send_chat_message,
+	send_document_via_template,
 	send_whatsapp_template,
 	upload_chat_media,
 )
