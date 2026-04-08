@@ -248,6 +248,7 @@ def send_whatsapp_template(doctype, docname, template_name, phone=None, target_f
 				"sendTo": normalized_phone,
 				"templetName": template_name,
 				"exampleArr": example_arr,
+				"token": api_key,
 			}
 			response = requests.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
 			result = handle_api_response(response)
@@ -279,6 +280,22 @@ cstr = frappe.utils.cstr
 # ---------------------------------------------------------------------------
 # Chat Widget API
 # ---------------------------------------------------------------------------
+
+
+def _extract_media_url_from_raw(raw_data):
+	"""Extract media link from raw webhook JSON (msgContext.{type}.link)."""
+	import json as _json
+	try:
+		data = _json.loads(raw_data) if isinstance(raw_data, str) else raw_data
+		ctx = data.get("msgContext") or {}
+		for key in ("document", "image", "video", "audio"):
+			media = ctx.get(key)
+			if isinstance(media, dict) and media.get("link"):
+				return media["link"]
+	except (ValueError, TypeError, AttributeError):
+		pass
+	return None
+
 
 POLYGIN_CONVERSATIONAL_ENDPOINT = "/api/v1/send-message"
 _DEDUP_WINDOW_SECONDS = 120
@@ -392,12 +409,16 @@ def get_chat_messages(phone, channel="whatsapp", page=1, page_size=50):
 
 	for msg in raw_msgs:
 		parsed_ts = _parse_timestamp(msg.timestamp)
+		media_url = msg.media_file
+		# Backfill: extract media URL from raw_data for older records missing media_file
+		if not media_url and msg.raw_data and msg.message_type in ("document", "image", "video", "audio"):
+			media_url = _extract_media_url_from_raw(msg.raw_data)
 		messages.append({
 			"id": msg.name,
 			"direction": msg.direction or "incoming",
 			"message": msg.message,
 			"message_type": msg.message_type,
-			"media_url": msg.media_file,
+			"media_url": media_url,
 			"timestamp": str(parsed_ts) if parsed_ts else str(msg.creation),
 			"sender_name": msg.sender_name,
 			"responding_agent": msg.responding_agent,

@@ -317,7 +317,7 @@ class PolyginChat {
 		} else if (msg.media_url && msg.message_type === "audio") {
 			content += `<div class="polygin-msg-audio"><audio controls src="${frappe.utils.escape_html(msg.media_url)}"></audio></div>`;
 		} else if (msg.media_url && msg.message_type === "document") {
-			const fname = (msg.media_url || "").split("/").pop() || "Document";
+			const fname = decodeURIComponent((msg.media_url || "").split("/").pop() || "Document");
 			content += `<a class="polygin-msg-document" href="${frappe.utils.escape_html(msg.media_url)}" target="_blank"><span class="polygin-msg-doc-icon">&#x1F4C4;</span><span class="polygin-msg-doc-name">${frappe.utils.escape_html(fname)}</span></a>`;
 		}
 
@@ -325,7 +325,10 @@ class PolyginChat {
 		if (msg.message_type === "interactive" || msg.message_type === "button") {
 			content += this._render_interactive(msg);
 		} else if (msg.message) {
-			content += this._render_text_with_readmore(msg.message);
+			// Strip redundant [Type] prefix when media is already rendered above
+			let text = msg.message;
+			if (msg.media_url) text = text.replace(/^\[(?:Document|Image|Video|Audio)\]\s*/i, "");
+			if (text) content += this._render_text_with_readmore(text);
 		}
 		content += `<div class="polygin-msg-meta">${this._format_time(msg.timestamp)}</div>`;
 		return `<div class="polygin-msg ${dirClass}">${content}</div>`;
@@ -652,15 +655,15 @@ class PolyginChat {
 	// ── Text Rendering with Read More ────────────────────────
 
 	_render_text_with_readmore(text, maxLen = 215) {
-		if (text.length <= maxLen) {
-			return `<div class="polygin-msg-text">${this._wa_format(text)}</div>`;
+		const trimmed = (text || "").trim();
+		if (trimmed.length <= maxLen) {
+			return `<div class="polygin-msg-text">${this._wa_format(trimmed)}</div>`;
 		}
-		// Truncate on a word boundary to avoid cutting mid-word
-		let cutoff = text.lastIndexOf(" ", maxLen);
-		if (cutoff < maxLen * 0.6) cutoff = maxLen; // fallback if no space found
-		const truncText = text.substring(0, cutoff);
+		let cutoff = trimmed.lastIndexOf(" ", maxLen);
+		if (cutoff < maxLen * 0.6) cutoff = maxLen;
+		const truncText = trimmed.substring(0, cutoff).trimEnd();
 		const uid = `rm_${Date.now()}_${Math.random().toString(36).substring(2, 6)}`;
-		return `<div class="polygin-msg-text"><span id="${uid}_s">${this._wa_format(truncText)}... <a href="#" class="polygin-readmore-link" onclick="document.getElementById('${uid}_s').style.display='none';document.getElementById('${uid}_f').style.display='inline';return false;">Read more</a></span><span id="${uid}_f" style="display:none">${this._wa_format(text)} <a href="#" class="polygin-readmore-link" onclick="document.getElementById('${uid}_f').style.display='none';document.getElementById('${uid}_s').style.display='inline';return false;">Show less</a></span></div>`;
+		return `<div class="polygin-msg-text"><span id="${uid}_s">${this._wa_format(truncText)}...<br><a href="#" class="polygin-readmore-link" onclick="document.getElementById('${uid}_s').style.display='none';document.getElementById('${uid}_f').style.display='block';return false;">Read more</a></span><span id="${uid}_f" style="display:none">${this._wa_format(trimmed)}<br><a href="#" class="polygin-readmore-link" onclick="document.getElementById('${uid}_f').style.display='none';document.getElementById('${uid}_s').style.display='block';return false;">Show less</a></span></div>`;
 	}
 
 	_wa_format(text) {

@@ -315,13 +315,15 @@
 }
 .polygin-readmore-link {
 	color: #64b5f6;
-	font-size: 0.85em;
+	font-size: 0.82em;
 	cursor: pointer;
 	text-decoration: none;
-	margin-left: 4px;
+	display: inline-block;
+	margin-top: 4px;
 }
 .polygin-readmore-link:hover {
 	text-decoration: underline;
+	color: #90caf9;
 }
 .polygin-msg-meta {
 	font-size: 11px;
