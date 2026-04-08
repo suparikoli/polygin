@@ -253,7 +253,10 @@ def send_whatsapp_template(doctype, docname, template_name, phone=None, target_f
 			response = requests.post(url, json=payload, headers=headers, timeout=REQUEST_TIMEOUT)
 			result = handle_api_response(response)
 
-			if settings.enable_logging:
+			# Always log template sends so we can track the originating ERPNext
+			# user (needed for notification routing). The enable_logging flag is
+			# honoured only for Failed entries to keep the log clean.
+			if result.get("success") or settings.enable_logging:
 				log_message(
 					recipient=normalized_phone, template_name=template_name,
 					status="Success" if result.get("success") else "Failed",

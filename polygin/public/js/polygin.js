@@ -42,6 +42,21 @@ function polygin_init_chat(frm) {
 			doctype: frm.doctype,
 			docname: frm.docname,
 		});
+
+		// Auto-open chat widget when arriving from a Polygin notification link
+		try {
+			const params = new URLSearchParams(window.location.search);
+			if (params.get("polygin_chat") === "open") {
+				setTimeout(() => {
+					try { window._polygin_chat_instance.expand_to_widget(); } catch (e) {}
+				}, 300);
+				// Strip the query param so refreshes don't keep reopening
+				params.delete("polygin_chat");
+				const newSearch = params.toString();
+				const newUrl = window.location.pathname + (newSearch ? "?" + newSearch : "") + window.location.hash;
+				window.history.replaceState({}, "", newUrl);
+			}
+		} catch (e) {}
 	};
 
 	if (_polygin_chat_enabled !== null) {
