@@ -9,6 +9,9 @@
   "enable_logging",
   "enable_chat_widget",
   "default_country_code",
+  "billing_section",
+  "currency",
+  "default_cost_per_send",
   "buttons"
  ],
  "fields": [
@@ -43,6 +46,25 @@
    "label": "Default Country Code"
   },
   {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "default": "INR",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "default": "0",
+   "fieldname": "default_cost_per_send",
+   "fieldtype": "Currency",
+   "label": "Default Cost per Template Send",
+   "description": "Used when a template row has no specific cost. Captured as a snapshot on every successful send."
+  },
+  {
    "fieldname": "buttons",
    "fieldtype": "Table",
    "label": "FB Approved Templates",
@@ -52,7 +74,7 @@
  "grid_page_length": 50,
  "issingle": 1,
  "links": [],
- "modified": "2026-04-04 00:00:00.000000",
+ "modified": "2026-05-07 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Polygin",
  "name": "Polygin Settings",

@@ -142,7 +142,25 @@ def handle_api_response(response):
 	}
 
 
-def log_message(recipient, template_name, status, response_data, reference_doctype, reference_name):
+def _resolve_cost(template_row, settings):
+	"""Resolve per-send cost: button-level override beats settings default."""
+	row_cost = frappe.utils.flt(template_row.get("cost_per_send")) if template_row else 0.0
+	if row_cost > 0:
+		return row_cost
+	return frappe.utils.flt(settings.get("default_cost_per_send"))
+
+
+def log_message(
+	recipient,
+	template_name,
+	status,
+	response_data,
+	reference_doctype,
+	reference_name,
+	cost=0.0,
+	currency=None,
+	category=None,
+):
 	"""Persist Polyg.in API result in Polygin Message Log."""
 
 	try:
@@ -151,7 +169,10 @@ def log_message(recipient, template_name, status, response_data, reference_docty
 				"doctype": "Polygin Message Log",
 				"recipient": cstr(recipient),
 				"template": cstr(template_name),
+				"category": cstr(category) if category else None,
 				"status": cstr(status),
+				"cost": frappe.utils.flt(cost) if status == "Success" else 0.0,
+				"currency": cstr(currency) if currency else None,
 				"response": frappe.as_json(response_data),
 				"reference_doctype": cstr(reference_doctype),
 				"reference_name": cstr(reference_name),
@@ -262,6 +283,9 @@ def send_whatsapp_template(doctype, docname, template_name, phone=None, target_f
 					status="Success" if result.get("success") else "Failed",
 					response_data=result.get("response") or {"message": result.get("message")},
 					reference_doctype=doctype, reference_name=docname,
+					cost=_resolve_cost(template_row, settings),
+					currency=cstr(settings.get("currency")) or None,
+					category=cstr(template_row.get("category")) if template_row else None,
 				)
 			return result
 

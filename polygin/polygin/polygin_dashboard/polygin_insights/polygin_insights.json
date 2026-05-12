@@ -1,0 +1,39 @@
+{
+ "cards": [
+  {"card": "Polygin Messages Sent"},
+  {"card": "Polygin Replies Received"},
+  {"card": "Polygin Reply Rate"},
+  {"card": "Polygin Active Conversations"},
+  {"card": "Polygin Failed Messages"},
+  {"card": "Polygin Top User Engagement"},
+  {"card": "Polygin Spend Today"},
+  {"card": "Polygin Spend This Month"},
+  {"card": "Polygin Avg Cost Per Reply"},
+  {"card": "Polygin Top Spender"}
+ ],
+ "charts": [
+  {"chart": "Polygin Sent vs Replies Daily", "width": "Full"},
+  {"chart": "Polygin Spend Trend Daily", "width": "Full"},
+  {"chart": "Polygin Messages Sent Trend", "width": "Half"},
+  {"chart": "Polygin Replies Trend", "width": "Half"},
+  {"chart": "Polygin Top Users by Messages", "width": "Half"},
+  {"chart": "Polygin Engagement Leaderboard", "width": "Half"},
+  {"chart": "Polygin Spend by User", "width": "Half"},
+  {"chart": "Polygin Spend by Category", "width": "Half"},
+  {"chart": "Polygin Spend by Template", "width": "Full"},
+  {"chart": "Polygin Top Templates", "width": "Half"},
+  {"chart": "Polygin Message Type Distribution", "width": "Half"}
+ ],
+ "creation": "2026-05-07 00:00:00.000000",
+ "dashboard_name": "Polygin Insights",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 1,
+ "is_standard": 1,
+ "modified": "2026-05-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Polygin",
+ "name": "Polygin Insights",
+ "owner": "Administrator"
+}

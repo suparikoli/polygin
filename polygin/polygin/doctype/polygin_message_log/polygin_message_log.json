@@ -6,7 +6,10 @@
  "field_order": [
   "recipient",
   "template",
+  "category",
   "status",
+  "cost",
+  "currency",
   "response",
   "reference_doctype",
   "reference_name",
@@ -26,11 +29,31 @@
    "label": "Template"
   },
   {
+   "fieldname": "category",
+   "fieldtype": "Data",
+   "label": "Category"
+  },
+  {
    "fieldname": "status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Status",
    "options": "Success\nFailed"
+  },
+  {
+   "default": "0",
+   "fieldname": "cost",
+   "fieldtype": "Currency",
+   "in_list_view": 1,
+   "label": "Cost",
+   "options": "currency"
+  },
+  {
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency",
+   "hidden": 1
   },
   {
    "fieldname": "response",
@@ -55,7 +78,7 @@
   }
  ],
  "links": [],
- "modified": "2026-03-18 00:00:00.000000",
+ "modified": "2026-05-07 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Polygin",
  "name": "Polygin Message Log",

@@ -8,3 +8,4 @@ polygin.patches.ensure_polygin_desktop_icon
 polygin.patches.populate_normalized_phone
 polygin.patches.migrate_templates
 polygin.patches.fix_message_direction_from_route
+polygin.patches.backfill_message_log_cost

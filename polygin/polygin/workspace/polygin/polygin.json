@@ -1,6 +1,43 @@
 {
- "charts": [],
- "content": "[{\"id\":\"polygin_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Polygin</span>\",\"col\":12}},{\"id\":\"polygin_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Settings\",\"col\":3}},{\"id\":\"polygin_logs_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Message Log\",\"col\":3}},{\"id\":\"polygin_wa_messages_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Wa Messages\",\"col\":3}},{\"id\":\"polygin_telegram_messages_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Telegram Messages\",\"col\":3}}]",
+ "charts": [
+  {
+   "chart_name": "Polygin Sent vs Replies Daily",
+   "label": "Polygin Sent vs Replies Daily"
+  },
+  {
+   "chart_name": "Polygin Spend Trend Daily",
+   "label": "Polygin Spend Trend Daily"
+  },
+  {
+   "chart_name": "Polygin Top Users by Messages",
+   "label": "Polygin Top Users by Messages"
+  },
+  {
+   "chart_name": "Polygin Engagement Leaderboard",
+   "label": "Polygin Engagement Leaderboard"
+  },
+  {
+   "chart_name": "Polygin Spend by User",
+   "label": "Polygin Spend by User"
+  },
+  {
+   "chart_name": "Polygin Spend by Category",
+   "label": "Polygin Spend by Category"
+  },
+  {
+   "chart_name": "Polygin Spend by Template",
+   "label": "Polygin Spend by Template"
+  },
+  {
+   "chart_name": "Polygin Top Templates",
+   "label": "Polygin Top Templates"
+  },
+  {
+   "chart_name": "Polygin Message Type Distribution",
+   "label": "Polygin Message Type Distribution"
+  }
+ ],
+ "content": "[{\"id\":\"polygin_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Polygin</span>\",\"col\":12}},{\"id\":\"polygin_settings_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Settings\",\"col\":3}},{\"id\":\"polygin_logs_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Message Log\",\"col\":3}},{\"id\":\"polygin_wa_messages_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Wa Messages\",\"col\":3}},{\"id\":\"polygin_telegram_messages_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Telegram Messages\",\"col\":3}},{\"id\":\"polygin_insights_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Insights</span>\",\"col\":12}},{\"id\":\"polygin_insights_shortcut\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Polygin Insights\",\"col\":3}},{\"id\":\"polygin_card_messages_sent\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Polygin Messages Sent\",\"col\":3}},{\"id\":\"polygin_card_replies_received\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Polygin Replies Received\",\"col\":3}},{\"id\":\"polygin_card_reply_rate\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Polygin Reply Rate\",\"col\":3}},{\"id\":\"polygin_card_active_conversations\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Polygin Active Conversations\",\"col\":3}},{\"id\":\"polygin_card_failed_messages\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Polygin Failed Messages\",\"col\":3}},{\"id\":\"polygin_card_top_user\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Polygin Top User Engagement\",\"col\":3}},{\"id\":\"polygin_spend_header\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Spend</span>\",\"col\":12}},{\"id\":\"polygin_card_spend_today\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Polygin Spend Today\",\"col\":3}},{\"id\":\"polygin_card_spend_month\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Polygin Spend This Month\",\"col\":3}},{\"id\":\"polygin_card_avg_cost_reply\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Polygin Avg Cost Per Reply\",\"col\":3}},{\"id\":\"polygin_card_top_spender\",\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Polygin Top Spender\",\"col\":3}},{\"id\":\"polygin_chart_sent_vs_replies\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Polygin Sent vs Replies Daily\",\"col\":12}},{\"id\":\"polygin_chart_spend_trend\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Polygin Spend Trend Daily\",\"col\":12}},{\"id\":\"polygin_chart_top_users\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Polygin Top Users by Messages\",\"col\":6}},{\"id\":\"polygin_chart_engagement\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Polygin Engagement Leaderboard\",\"col\":6}},{\"id\":\"polygin_chart_spend_by_user\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Polygin Spend by User\",\"col\":6}},{\"id\":\"polygin_chart_spend_by_category\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Polygin Spend by Category\",\"col\":6}},{\"id\":\"polygin_chart_spend_by_template\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Polygin Spend by Template\",\"col\":12}},{\"id\":\"polygin_chart_top_templates\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Polygin Top Templates\",\"col\":6}},{\"id\":\"polygin_chart_message_types\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Polygin Message Type Distribution\",\"col\":6}}]",
  "creation": "2026-03-18 00:00:00",
  "custom_blocks": [],
  "docstatus": 0,
@@ -16,12 +53,28 @@
   {
    "hidden": 0,
    "is_query_report": 0,
+   "label": "Configuration",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
    "label": "Polygin Settings",
    "link_count": 0,
    "link_to": "Polygin Settings",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Messages",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
   },
   {
    "hidden": 0,
@@ -52,13 +105,72 @@
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Insights",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Polygin Insights",
+   "link_count": 0,
+   "link_to": "Polygin Insights",
+   "link_type": "Dashboard",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-04-04 00:00:00.000000",
+ "modified": "2026-05-07 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Polygin",
  "name": "Polygin",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Polygin Messages Sent",
+   "number_card_name": "Polygin Messages Sent"
+  },
+  {
+   "label": "Polygin Replies Received",
+   "number_card_name": "Polygin Replies Received"
+  },
+  {
+   "label": "Polygin Reply Rate",
+   "number_card_name": "Polygin Reply Rate"
+  },
+  {
+   "label": "Polygin Active Conversations",
+   "number_card_name": "Polygin Active Conversations"
+  },
+  {
+   "label": "Polygin Failed Messages",
+   "number_card_name": "Polygin Failed Messages"
+  },
+  {
+   "label": "Polygin Top User Engagement",
+   "number_card_name": "Polygin Top User Engagement"
+  },
+  {
+   "label": "Polygin Spend Today",
+   "number_card_name": "Polygin Spend Today"
+  },
+  {
+   "label": "Polygin Spend This Month",
+   "number_card_name": "Polygin Spend This Month"
+  },
+  {
+   "label": "Polygin Avg Cost Per Reply",
+   "number_card_name": "Polygin Avg Cost Per Reply"
+  },
+  {
+   "label": "Polygin Top Spender",
+   "number_card_name": "Polygin Top Spender"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
@@ -97,6 +209,13 @@
    "label": "Polygin Telegram Messages",
    "link_to": "Polygin Telegram Messages",
    "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "",
+   "label": "Polygin Insights",
+   "link_to": "Polygin Insights",
+   "type": "Dashboard"
   }
  ],
  "title": "Polygin",
