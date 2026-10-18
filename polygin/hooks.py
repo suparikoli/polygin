@@ -8,7 +8,7 @@ app_license = "mit"
 add_to_apps_screen = [
 	{
 		"name": "polygin",
-		"logo": "/assets/polygin/images/polygin_logo.webp",
+		"logo": "/assets/polygin/images/polygin_logo.png",
 		"title": "Polygin",
 		"route": "/app/polygin",
 	}
