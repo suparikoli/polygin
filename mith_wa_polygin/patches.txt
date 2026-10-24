@@ -1,0 +1,12 @@
+[pre_model_sync]
+# Patches added in this section will be executed before doctypes are migrated
+# Read docs to understand patches: https://frappeframework.com/docs/v14/user/en/database-migrations
+mith_wa_polygin.patches.rename_from_polygin
+
+[post_model_sync]
+# Patches added in this section will be executed after doctypes are migrated
+mith_wa_polygin.patches.ensure_polygin_desktop_icon
+mith_wa_polygin.patches.populate_normalized_phone
+mith_wa_polygin.patches.migrate_templates
+mith_wa_polygin.patches.fix_message_direction_from_route
+mith_wa_polygin.patches.backfill_message_log_cost

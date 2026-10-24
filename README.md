@@ -1,4 +1,7 @@
-### Polygin
+# Mith WA Polygin
+
+> Renamed from `polygin` to `mith_wa_polygin` on 2026-10-24 (owner-approved `mith_` names). A site that still runs
+> `polygin`: `bench --site <site> rename-from-polygin`, then `bench --site <site> migrate`.
 
 Send WhatsApp template messages from ERPNext using Polyg.in with configurable buttons and dynamic field mapping.
 
@@ -9,7 +12,7 @@ You can install this app using the [bench](https://github.com/frappe/bench) CLI:
 ```bash
 cd $PATH_TO_YOUR_BENCH
 bench get-app $URL_OF_THIS_REPO --branch version-16
-bench install-app polygin
+bench install-app mith_wa_polygin
 ```
 
 ### Contributing
@@ -17,7 +20,7 @@ bench install-app polygin
 This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
 
 ```bash
-cd apps/polygin
+cd apps/mith_wa_polygin
 pre-commit install
 ```
 

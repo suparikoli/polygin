@@ -1,0 +1,83 @@
+{
+ "actions": [],
+ "autoname": "format:QR-{####}",
+ "creation": "2026-04-04 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "title",
+  "message_type",
+  "message",
+  "interactive_payload",
+  "shortcode",
+  "is_active"
+ ],
+ "fields": [
+  {
+   "fieldname": "title",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Title",
+   "reqd": 1
+  },
+  {
+   "default": "text",
+   "fieldname": "message_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Message Type",
+   "options": "text\nbutton\nlist"
+  },
+  {
+   "fieldname": "message",
+   "fieldtype": "Small Text",
+   "in_list_view": 1,
+   "label": "Message",
+   "reqd": 1,
+   "description": "For text: the message body. For button/list: the body text of the interactive message."
+  },
+  {
+   "fieldname": "interactive_payload",
+   "fieldtype": "Long Text",
+   "label": "Interactive Payload",
+   "description": "JSON payload for button/list messages. Auto-populated from the chat widget composer.",
+   "depends_on": "eval:doc.message_type !== 'text'"
+  },
+  {
+   "fieldname": "shortcode",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Shortcode",
+   "description": "Type /shortcode in chat to insert this reply"
+  },
+  {
+   "default": "1",
+   "fieldname": "is_active",
+   "fieldtype": "Check",
+   "in_list_view": 1,
+   "label": "Active"
+  }
+ ],
+ "links": [],
+ "modified": "2026-04-04 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Mith WA Polygin",
+ "name": "Polygin Quick Reply",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "sort_field": "creation",
+ "sort_order": "DESC",
+ "states": []
+}
