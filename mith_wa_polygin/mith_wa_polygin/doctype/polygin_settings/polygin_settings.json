@@ -1,0 +1,99 @@
+{
+ "actions": [],
+ "creation": "2026-03-18 00:00:00.000000",
+ "doctype": "DocType",
+ "engine": "InnoDB",
+ "field_order": [
+  "api_key",
+  "base_url",
+  "enable_logging",
+  "enable_chat_widget",
+  "default_country_code",
+  "billing_section",
+  "currency",
+  "default_cost_per_send",
+  "buttons"
+ ],
+ "fields": [
+  {
+   "fieldname": "api_key",
+   "fieldtype": "Password",
+   "label": "API Key",
+   "reqd": 1
+  },
+  {
+   "default": "https://polyg.in",
+   "fieldname": "base_url",
+   "fieldtype": "Data",
+   "label": "Base URL"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_logging",
+   "fieldtype": "Check",
+   "label": "Enable Logging"
+  },
+  {
+   "default": "1",
+   "fieldname": "enable_chat_widget",
+   "fieldtype": "Check",
+   "label": "Enable Chat Widget"
+  },
+  {
+   "default": "+91",
+   "fieldname": "default_country_code",
+   "fieldtype": "Data",
+   "label": "Default Country Code"
+  },
+  {
+   "fieldname": "billing_section",
+   "fieldtype": "Section Break",
+   "label": "Billing"
+  },
+  {
+   "default": "INR",
+   "fieldname": "currency",
+   "fieldtype": "Link",
+   "label": "Currency",
+   "options": "Currency"
+  },
+  {
+   "default": "0",
+   "fieldname": "default_cost_per_send",
+   "fieldtype": "Currency",
+   "label": "Default Cost per Template Send",
+   "description": "Used when a template row has no specific cost. Captured as a snapshot on every successful send."
+  },
+  {
+   "fieldname": "buttons",
+   "fieldtype": "Table",
+   "label": "FB Approved Templates",
+   "options": "Polygin Button"
+  }
+ ],
+ "grid_page_length": 50,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-05-07 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Mith WA Polygin",
+ "name": "Polygin Settings",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "print": 1,
+   "read": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "quick_entry": 1,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1
+}
