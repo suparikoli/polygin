@@ -12,6 +12,8 @@ def rename_from_polygin_cmd(context):
 	for site in context.sites:
 		frappe.init(site=site)
 		frappe.connect()
+		# Runs before migrate: new framework tables (e.g. frappe 16.60 Flow Trigger) may not exist yet.
+		frappe.flags.in_migrate = True
 		try:
 			execute()
 			click.echo(f"{site}: now on mith_wa_polygin; run `bench --site {site} migrate`")
